@@ -29,6 +29,18 @@
 \version V0.1.1
 $Id$
 
+\todo Use the configuration file parser which comes along with
+boost::program_options so that optcalex will be configurable using a
+configuration file.
+
+\todo Additionally it would be convenient if optcalex could make use of several
+optimization algorithms as i.e optimize::MonteCarlo. The implementation
+shouldn't be really difficult but in case the global optimization algorithm is
+able to refine the grid and creates subgrids it might occur that it only
+generates subgrids with less dimensions as the parent major parameter space grid
+has. So the synchronization between the global algorithm and the calex
+configuration file class should be some kind of automataded.
+
 */
 
 // ------ END OF README.doxydoc ------
