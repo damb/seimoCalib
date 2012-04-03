@@ -291,7 +291,7 @@ int main(int iargc, char* argv[])
     if (vm.count("amp-param"))
     {
       calex::SystemParameter* amp_param = 0;
-      calex::parser::systemParameterParser(vm["amp_param"].as<std::string>(),
+      calex::parser::systemParameterParser(vm["amp-param"].as<std::string>(),
           &amp_param);
       config.set_amp(*amp_param);
       delete default_amp_param;
@@ -302,7 +302,7 @@ int main(int iargc, char* argv[])
     if (vm.count("del-param"))
     {
       calex::SystemParameter* del_param = 0;
-      calex::parser::systemParameterParser(vm["del_param"].as<std::string>(),
+      calex::parser::systemParameterParser(vm["del-param"].as<std::string>(),
           &del_param);
       config.set_del(*del_param);
       delete default_del_param;
@@ -313,7 +313,7 @@ int main(int iargc, char* argv[])
     if (vm.count("sub-param"))
     {
       calex::SystemParameter* sub_param = 0;
-      calex::parser::systemParameterParser(vm["sub_param"].as<std::string>(),
+      calex::parser::systemParameterParser(vm["sub-param"].as<std::string>(),
           &sub_param);
       config.set_sub(*sub_param);
       delete default_sub_param;
@@ -324,7 +324,7 @@ int main(int iargc, char* argv[])
     if (vm.count("til-param"))
     {
       calex::SystemParameter* til_param = 0;
-      calex::parser::systemParameterParser(vm["til_param"].as<std::string>(),
+      calex::parser::systemParameterParser(vm["til-param"].as<std::string>(),
           &til_param);
       config.set_til(*til_param);
       delete default_til_param;
