@@ -28,16 +28,19 @@
  * Copyright (c) 2012 by Daniel Armbruster
  * 
  * REVISIONS and CHANGES 
- * 19/03/2012  V0.1  Daniel Armbruster
+ * 19/03/2012  V0.1   Daniel Armbruster
+ * 08/04/2012  V0.2   Both commandline options and option passing in a
+ *                    configuration file is supported.
  * 
  * ============================================================================
  */
  
-#define OPTCALEX_VERSION "V0.1"
+#define OPTCALEX_VERSION "V0.2"
 #define OPTCALEX_LICENSE "GPLv2"
 
 #include <vector>
 #include <iomanip>
+#include <fstream>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <optimizexx/parameter.h>
@@ -160,15 +163,24 @@ int main(int iargc, char* argv[])
 
   try
   {
-    po::options_description desc("Allowed options", 80);
-    desc.add_options()
+    
+    fs::path configFilePath;
+
+    // declare only commandline options
+    po::options_description generic("Generic options");
+    generic.add_options()
       ("version,V", "Show version of optcalex.")
-      ("verbose,v",po::value<int>()->implicit_value(1), "Be verbose.")
       ("help,h", "Print this help.")
       ("xhelp", "Print extended help text.")
+      ("verbose,v",po::value<int>()->implicit_value(1), "Be verbose.")
       ("overwrite,o", "overwrite OUTFILE")
-      ("config-file", po::value<fs::path>()->default_value(
+      ("config-file", po::value<fs::path>(&configFilePath)->default_value(
         "~/.optimize/optcalex.rc"), "Path to optcalex configuration file.")
+      ;
+
+    // declare both commandline and configuration file options
+    po::options_description config("Configuration");
+    config.add_options()
       ("alias", po::value<double>()->default_value(CALEX_ALIAS),
        "Period of anti-alias filter")
       ("qac", po::value<double>()->default_value(CALEX_QAC),
@@ -203,29 +215,44 @@ int main(int iargc, char* argv[])
        "Filename of calibration input signal file.")
       ("calib-out", po::value<fs::path>()->required(), 
        "Filename of calibration output signal file.")
+      ;
+
+    // Hidden options, will be allowed both on command line and
+    // in config file, but will not be shown to the user.
+    po::options_description hidden("Hidden options");
+    hidden.add_options()
       ("output-file", po::value<fs::path>()->required(),
        "Filepath of OUTFILE.")
-    ;
+      ;
+
+    po::options_description cmdline_options;
+    cmdline_options.add(generic).add(config).add(hidden);
+
+    po::options_description config_file_options;
+    config_file_options.add(config).add(hidden);
+
+    po::options_description visible_options("Allowed options", 80);
+    visible_options.add(generic).add(config);
 
     po::positional_options_description p;
     p.add("output-file", 1);
 
     po::variables_map vm;
-    po::store(po::command_line_parser(iargc, argv).options(
-          desc).positional(p).run(), vm);
+    po::store(po::command_line_parser(iargc, argv).
+      options(cmdline_options).positional(p).run(), vm);
     // help requested? print help
     if (vm.count("help"))
     {
       cout << usage_text
         << "------------------------------------------------------------\n";
-      cout << desc;
+      cout << visible_options;
       exit(0);
     } else
     if (vm.count("xhelp"))
     {
       cout << usage_text
         << "------------------------------------------------------------\n";
-      cout << desc;
+      cout << visible_options;
       cout << notes_text << std::endl;
       exit(0);
     } else
@@ -236,6 +263,28 @@ int main(int iargc, char* argv[])
       exit(0);
     }
     po::notify(vm);
+
+    if (vm.count("verbose"))
+    {
+      cout << "optcalex: Opening optcalex configuration file." << std::endl;
+    }
+
+    // reading configuration file
+#if BOOST_FILESYSTEM_VERSION == 2
+    std::ifstream ifs(configFilePath.string().c_str());
+#else
+    std::ifstream ifs(configFilePath.c_str());
+#endif
+    if (!ifs)
+    {
+      throw std::string(
+          "Can not open config file '"+configFilePath.string()+"'");
+    }
+    else
+    {
+      po::store(parse_config_file(ifs, config_file_options), vm);
+      po:: notify(vm);
+    }
 
     // fetch commandline arguments
     fs::path outpath(vm["output-file"].as<fs::path>());
