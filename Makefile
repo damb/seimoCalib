@@ -65,7 +65,7 @@ FLAGS += $(MYFLAGS)
 CFLAGS += -march=native -O2 -fno-reorder-blocks -fno-reorder-functions -pipe
 
 CXXFLAGS += -Wall $(FLAGS)
-LDFLAGS+=$(addprefix -L,$(LOCLIBDIR)) -lboost_thread
+LDFLAGS+=$(addprefix -L,$(LOCLIBDIR))
 CPPFLAGS+=$(addprefix -I,$(LOCINCLUDEDIR)) $(FLAGS)
 
 #=============================================================================
@@ -87,8 +87,8 @@ include $(patsubst %.cc,%.d,$(SRCFILES))
 
 optcalex: %: %.o
 	$(CXX) -o $@ $^ -I$(LOCINCLUDEDIR) -loptimizexx -lcalexxx \
-		-lboost_filesystem  -lboost_program_options -L$(LOCLIBDIR) $(CXXFLAGS) \
-		$(FLAGS) $(LDFLAGS)
+		-lboost_filesystem -lboost_program_options -lboost_thread -L$(LOCLIBDIR) \
+		$(CXXFLAGS) $(FLAGS) $(LDFLAGS)
 
 # ============================================================================
 # documentation
