@@ -65,7 +65,7 @@ FLAGS += $(MYFLAGS)
 CFLAGS += -march=native -O2 -fno-reorder-blocks -fno-reorder-functions -pipe
 
 CXXFLAGS += -Wall $(FLAGS)
-LDFLAGS+=$(addprefix -L,$(LOCLIBDIR))
+LDFLAGS+=$(addprefix -L,$(LOCLIBDIR)) -lboost_thread
 CPPFLAGS+=$(addprefix -I,$(LOCINCLUDEDIR)) $(FLAGS)
 
 #=============================================================================
