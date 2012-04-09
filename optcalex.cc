@@ -165,9 +165,13 @@ int main(int iargc, char* argv[])
   {
     
     fs::path configFilePath;
+    fs::path defaultConfigFilePath(std::string(getenv("HOME")));
+    defaultConfigFilePath /= ".optimize";
+    defaultConfigFilePath /= "optcalex.rc";
+
 
     // declare only commandline options
-    po::options_description generic("Generic options");
+    po::options_description generic("Commandline options");
     generic.add_options()
       ("version,V", "Show version of optcalex.")
       ("help,h", "Print this help.")
@@ -175,11 +179,12 @@ int main(int iargc, char* argv[])
       ("verbose,v",po::value<int>()->implicit_value(1), "Be verbose.")
       ("overwrite,o", "overwrite OUTFILE")
       ("config-file", po::value<fs::path>(&configFilePath)->default_value(
-        "~/.optimize/optcalex.rc"), "Path to optcalex configuration file.")
+        defaultConfigFilePath), "Path to optcalex configuration file.")
       ;
 
     // declare both commandline and configuration file options
-    po::options_description config("Configuration");
+    po::options_description config(
+        "Both Commandline and optcalex configuration file options");
     config.add_options()
       ("alias", po::value<double>()->default_value(CALEX_ALIAS),
        "Period of anti-alias filter")
@@ -277,8 +282,25 @@ int main(int iargc, char* argv[])
 #endif
     if (!ifs)
     {
-      throw std::string(
-          "Can not open config file '"+configFilePath.string()+"'");
+      // if default configuration file does not exist -> create default optcalex
+      // configuration file
+      if (configFilePath == defaultConfigFilePath &&
+          !fs::exists(defaultConfigFilePath))
+      {
+        // create directory
+        fs::create_directory(defaultConfigFilePath.parent_path());
+        // create default configuration file
+#if BOOST_FILESYSTEM_VERSION == 2
+        std::ofstream ofs(defaultConfigFilePath.string().c_str());
+#else
+        std::ofstream ofs(defaultConfigFilePath.c_str());
+#endif
+        ofs.close();
+      } else
+      {
+        throw std::string(
+            "Can not open config file '"+configFilePath.string()+"'");
+      }
     }
     else
     {
