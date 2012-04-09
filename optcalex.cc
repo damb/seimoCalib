@@ -314,7 +314,8 @@ int main(int iargc, char* argv[])
 
     /* --------------------------------------------------------------------- */
     // configure calex parameter file
-    calex::CalexConfig config(calibInfile.string(), calibOutfile.string());
+    calex::CalexConfig calex_config(
+        calibInfile.string(), calibOutfile.string());
     // fetch system parameter commandline arguments
     if (vm.count("sys-param"))
     {
@@ -325,7 +326,7 @@ int main(int iargc, char* argv[])
       {
         calex::SystemParameter* sys_param = 0;
         calex::parser::systemParameterParser(*cit, &sys_param);
-        config.add_systemParameter(*sys_param);
+        calex_config.add_systemParameter(*sys_param);
       }
     }
 
@@ -342,44 +343,44 @@ int main(int iargc, char* argv[])
       calex::SystemParameter* amp_param = 0;
       calex::parser::systemParameterParser(vm["amp-param"].as<std::string>(),
           &amp_param, "amp");
-      config.set_amp(*amp_param);
+      calex_config.set_amp(*amp_param);
       delete default_amp_param;
     } else
     {
-      config.set_amp(*default_amp_param);
+      calex_config.set_amp(*default_amp_param);
     }
     if (vm.count("del-param"))
     {
       calex::SystemParameter* del_param = 0;
       calex::parser::systemParameterParser(vm["del-param"].as<std::string>(),
           &del_param, "del");
-      config.set_del(*del_param);
+      calex_config.set_del(*del_param);
       delete default_del_param;
     } else
     {
-      config.set_del(*default_del_param);
+      calex_config.set_del(*default_del_param);
     }
     if (vm.count("sub-param"))
     {
       calex::SystemParameter* sub_param = 0;
       calex::parser::systemParameterParser(vm["sub-param"].as<std::string>(),
           &sub_param, "sub");
-      config.set_sub(*sub_param);
+      calex_config.set_sub(*sub_param);
       delete default_sub_param;
     } else
     {
-      config.set_sub(*default_sub_param);
+      calex_config.set_sub(*default_sub_param);
     }
     if (vm.count("til-param"))
     {
       calex::SystemParameter* til_param = 0;
       calex::parser::systemParameterParser(vm["til-param"].as<std::string>(),
           &til_param, "til");
-      config.set_til(*til_param);
+      calex_config.set_til(*til_param);
       delete default_til_param;
     } else
     {
-      config.set_til(*default_til_param);
+      calex_config.set_til(*default_til_param);
     }
     // fetch first order subsystem commandline arguments
     if (vm.count("first-order"))
@@ -391,7 +392,7 @@ int main(int iargc, char* argv[])
       {
         calex::CalexSubsystem* subsys = 0;
         calex::parser::firstOrderParser(*cit, &subsys);
-        config.add_subsystem(*subsys);
+        calex_config.add_subsystem(*subsys);
       }
     }
     // fetch second order subsystem commandline arguments
@@ -404,7 +405,7 @@ int main(int iargc, char* argv[])
       {
         calex::CalexSubsystem* subsys = 0;
         calex::parser::secondOrderParser(*cit, &subsys);
-        config.add_subsystem(*subsys);
+        calex_config.add_subsystem(*subsys);
       }
     }
     
@@ -418,15 +419,15 @@ int main(int iargc, char* argv[])
         << "optcalex: Set finac to: " << vm["finac"].as<double>() << endl 
         << "optcalex: Set maxit to: " << vm["maxit"].as<int>() << endl;
     }
-    config.set_alias(vm["alias"].as<double>());
-    config.set_m0(vm["m0"].as<int>());
-    config.set_ns1(vm["ns1"].as<int>());
-    config.set_ns2(vm["ns2"].as<int>());
-    config.set_qac(vm["qac"].as<double>());
-    config.set_finac(vm["finac"].as<double>());
-    config.set_maxit(vm["maxit"].as<int>());
+    calex_config.set_alias(vm["alias"].as<double>());
+    calex_config.set_m0(vm["m0"].as<int>());
+    calex_config.set_ns1(vm["ns1"].as<int>());
+    calex_config.set_ns2(vm["ns2"].as<int>());
+    calex_config.set_qac(vm["qac"].as<double>());
+    calex_config.set_finac(vm["finac"].as<double>());
+    calex_config.set_maxit(vm["maxit"].as<int>());
 
-    if (! config.hasGridSystemParameters())
+    if (! calex_config.hasGridSystemParameters())
     {
       throw std::string("No grid system parameters specified.");
     }
@@ -446,12 +447,12 @@ int main(int iargc, char* argv[])
     opt::GlobalAlgorithm<TcoordType, TresultType>* algo = 
       new opt::GridSearch<TcoordType, TresultType>(builder);
 
-    config.set_gridSystemParameters<TcoordType>(*algo);
+    calex_config.set_gridSystemParameters<TcoordType>(*algo);
 
-    calex::CalexApplication<TcoordType> app(&config);
+    calex::CalexApplication<TcoordType> app(&calex_config);
 
     // synchronization grid and calex configuration file
-    config.synchronize<TcoordType>(*algo);
+    calex_config.synchronize<TcoordType>(*algo);
 
     algo->constructParameterSpace();
     if (vm.count("verbose"))
