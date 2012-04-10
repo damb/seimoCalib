@@ -471,7 +471,8 @@ int main(int iargc, char* argv[])
 
     calex_config.set_gridSystemParameters<TcoordType>(*algo);
 
-    calex::CalexApplication<TcoordType> app(&calex_config, vm.count("verbose"));
+    calex::CalexApplication<TcoordType> app(&calex_config,
+       vm.count("verbose"));
 
     // synchronization grid and calex configuration file
     calex_config.synchronize<TcoordType>(*algo);
