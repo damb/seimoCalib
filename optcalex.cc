@@ -487,8 +487,8 @@ int main(int iargc, char* argv[])
 
     // collect results and write to outpath
     std::ofstream ofs(outpath.string().c_str());
-    opt::CompositeIterator<TcoordType, TresultType>* it = 
-      algo->getParameterSpace().createIterator(opt::NodeIter);
+    opt::Iterator<TcoordType, TresultType> it = 
+      algo->getParameterSpace().createIterator(opt::ForwardNodeIter);
     if (vm.count("verbose"))
     {
       cout << "optcalex: Collecting results from parameter space grid ..."
@@ -497,16 +497,16 @@ int main(int iargc, char* argv[])
         << endl;
     }
 
-    for (it->first(); !it->isDone(); it->next())
+    for (it.first(); !it.isDone(); ++it)
     {
-      std::vector<TcoordType> const& c = it->currentItem()->getCoordinates();
+      std::vector<TcoordType> const& c = (*it)->getCoordinates();
       for (std::vector<TcoordType>::const_iterator cit(c.begin());
           cit != c.end(); ++cit)
       {
         ofs << std::setw(12) << std::fixed << std::left << *cit << " ";
       }
       ofs << "    ";
-      it->currentItem()->getResultData().writeLine(ofs);
+      (*it)->getResultData().writeLine(ofs);
     }
 
     delete algo;
