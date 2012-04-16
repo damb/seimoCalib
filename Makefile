@@ -61,7 +61,7 @@ $(call CHECKVARS,LOCINCLUDEDIR LOCLIBDIR)
 $(call CHECKVARS, BOOST_FILESYSTEM_VERSION)
 
 FLAGS= -DBOOST_FILESYSTEM_VERSION=$(BOOST_FILESYSTEM_VERSION)
-FLAGS += $(MYFLAGS)
+FLAGS += $(MYFLAGS) -std=c++0x
 CFLAGS += -march=native -O2 -fno-reorder-blocks -fno-reorder-functions -pipe
 
 CXXFLAGS += -Wall $(FLAGS)
@@ -87,8 +87,8 @@ include $(patsubst %.cc,%.d,$(SRCFILES))
 
 optcalex: %: %.o
 	$(CXX) -o $@ $^ -I$(LOCINCLUDEDIR) -loptimizexx -lcalexxx \
-		-lboost_filesystem -lboost_program_options -lboost_thread -L$(LOCLIBDIR) \
-		$(CXXFLAGS) $(FLAGS) $(LDFLAGS)
+		-lboost_filesystem -lboost_program_options -lboost_thread -std=c++0x \
+		-L$(LOCLIBDIR) $(CXXFLAGS) $(FLAGS) $(LDFLAGS)
 
 # ============================================================================
 # documentation
