@@ -31,11 +31,13 @@
  * 19/03/2012  V0.1   Daniel Armbruster
  * 08/04/2012  V0.2   Both commandline options and option passing in a
  *                    configuration file is supported.
+ * 18/04/2012  V0.3   Dynamic configuration of number of threads started for
+ *                    computation.
  * 
  * ============================================================================
  */
  
-#define OPTCALEX_VERSION "V0.2"
+#define OPTCALEX_VERSION "V0.3"
 #define OPTCALEX_LICENSE "GPLv2"
 
 #include <vector>
