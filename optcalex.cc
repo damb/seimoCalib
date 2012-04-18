@@ -501,6 +501,13 @@ int main(int iargc, char* argv[])
         << "optcalex: Writing result file ..."
         << endl;
     }
+    if (vm.count("verbose"))
+    {
+      cout << "optcalex: Collecting results from parameter space grid ..."
+        << endl
+        << "optcalex: Writing result file ..."
+        << endl;
+    }
 
     for (it.first(); !it.isDone(); ++it)
     {
