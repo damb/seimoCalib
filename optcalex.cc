@@ -43,6 +43,7 @@
 #include <fstream>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/thread.hpp>
 #include <optimizexx/parameter.h>
 #include <optimizexx/standardbuilder.h>
 #include <optimizexx/iterator.h>
@@ -75,7 +76,7 @@ int main(int iargc, char* argv[])
     "License: "OPTCALEX_LICENSE "\n" 
     "    SVN: $Id$\n" 
     " Author: Daniel Armbruster" "\n"
-    "  Usage: optcalex [-v|--verbose] [-o|--overwrite] " "\n"
+    "  Usage: optcalex [-v|--verbose] [-o|--overwrite] [-t|--threads] " "\n"
     "                  [--config-file arg] [--maxit arg]" "\n"
     "                  [--alias arg] [--qac arg] [--finac arg]" "\n"
     "                  [--ns1 arg] [ns2 arg] [--m0 arg]" "\n"
@@ -168,7 +169,7 @@ int main(int iargc, char* argv[])
     fs::path defaultConfigFilePath(std::string(getenv("HOME")));
     defaultConfigFilePath /= ".optimize";
     defaultConfigFilePath /= "optcalex.rc";
-
+    size_t numThreads = boost::thread::hardware_concurrency();
 
     // declare only commandline options
     po::options_description generic("Commandline options");
@@ -177,9 +178,11 @@ int main(int iargc, char* argv[])
       ("help,h", "Print this help.")
       ("xhelp", "Print extended help text.")
       ("verbose,v",po::value<int>()->implicit_value(1), "Be verbose.")
-      ("overwrite,o", "overwrite OUTFILE")
+      ("overwrite,o", "Overwrite OUTFILE")
       ("config-file", po::value<fs::path>(&configFilePath)->default_value(
         defaultConfigFilePath), "Path to optcalex configuration file.")
+      ("threads,t",po::value<size_t>(&numThreads)->default_value(numThreads),
+       "Number of threads to start for parallel computation")
       ;
 
     // declare both commandline and configuration file options
@@ -189,8 +192,8 @@ int main(int iargc, char* argv[])
       ("alias", po::value<double>()->default_value(CALEX_ALIAS),
        "Period of anti-alias filter")
       ("qac", po::value<double>()->default_value(CALEX_QAC),
-       "iteration stops when improvement in the rms misfit in one step becomes"
-       "less than qac")
+       "Iteration stops when improvement in the rms misfit in one step becomes"
+       "less than qac.")
       ("finac", po::value<double>()->default_value(CALEX_FINAC),
        "Iteration stops when normalized parameters change by less than finac.")
       ("ns1", po::value<int>()->default_value(CALEX_NS1),
@@ -467,7 +470,7 @@ int main(int iargc, char* argv[])
 
     // gridsearch algorithm
     opt::GlobalAlgorithm<TcoordType, TresultType>* algo = 
-      new opt::GridSearch<TcoordType, TresultType>(builder);
+      new opt::GridSearch<TcoordType, TresultType>(builder, numThreads);
 
     calex_config.set_gridSystemParameters<TcoordType>(*algo);
 
