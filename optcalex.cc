@@ -65,9 +65,6 @@ using std::endl;
 typedef double TcoordType;
 typedef calex::CalexResult TresultType;
 
-/*!
- * \todo Make use of boost::program_options configuration file parser
- */
 int main(int iargc, char* argv[])
 {
 

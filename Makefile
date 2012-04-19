@@ -57,8 +57,9 @@ clean:
 CHECKVAR=$(if $($(1)),,$(error ERROR: missing variable $(1)))
 CHECKVARS=$(foreach var,$(1),$(call CHECKVAR,$(var)))
 #
-$(call CHECKVARS,LOCINCLUDEDIR LOCLIBDIR)
+$(call CHECKVARS,LOCINCLUDEDIR LOCLIBDIR LOCBINDIR)
 $(call CHECKVARS, BOOST_FILESYSTEM_VERSION)
+$(call CHECKVARS,TF_BROWSER TF_WWWBASEDIR)
 
 FLAGS= -DBOOST_FILESYSTEM_VERSION=$(BOOST_FILESYSTEM_VERSION)
 FLAGS += $(MYFLAGS) -std=c++0x
@@ -81,7 +82,7 @@ CPPFLAGS+=$(addprefix -I,$(LOCINCLUDEDIR)) $(FLAGS)
       [ -s $@ ] || rm -f $@'
 
 SRCFILES=$(wildcard *.cc)
-include $(patsubst %.cc,%.d,$(SRCFILES))
+-include $(patsubst %.cc,%.d,$(SRCFILES))
 
 #------------------------------------------------------------------------------
 
@@ -89,6 +90,9 @@ optcalex: %: %.o
 	$(CXX) -o $@ $^ -I$(LOCINCLUDEDIR) -loptimizexx -lcalexxx \
 		-lboost_filesystem -lboost_program_options -lboost_thread -std=c++0x \
 		-L$(LOCLIBDIR) $(CXXFLAGS) $(FLAGS) $(LDFLAGS)
+
+optnonlin:
+	$(Make) -C optnonlin optnonlin
 
 # ============================================================================
 # documentation
