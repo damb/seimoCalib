@@ -491,13 +491,7 @@ int main(int iargc, char* argv[])
     std::ofstream ofs(outpath.string().c_str());
     opt::Iterator<TcoordType, TresultType> it = 
       algo->getParameterSpace().createIterator(opt::ForwardNodeIter);
-    if (vm.count("verbose"))
-    {
-      cout << "optcalex: Collecting results from parameter space grid ..."
-        << endl
-        << "optcalex: Writing result file ..."
-        << endl;
-    }
+
     if (vm.count("verbose"))
     {
       cout << "optcalex: Collecting results from parameter space grid ..."
