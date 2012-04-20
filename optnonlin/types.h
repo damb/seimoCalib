@@ -1,13 +1,13 @@
-/*! \file result.cc
- * \brief 
+/*! \file types.h
+ * \brief Declaration of \a optnonlin specific types.
  * 
  * ----------------------------------------------------------------------------
  * 
  * $Id$
  * \author Daniel Armbruster
- * \date 19/04/2012
+ * \date 20/04/2012
  * 
- * Purpose: 
+ * Purpose:  Declaration of \a optnonlin specific types.
  *
  * ----
  * This file is part of optnonlin.
@@ -29,11 +29,17 @@
  * Copyright (c) 2012 by Daniel Armbruster
  * 
  * REVISIONS and CHANGES 
- * 19/04/2012  V0.1  Daniel Armbruster
+ * 20/04/2012  V0.1  Daniel Armbruster
  * 
  * ============================================================================
  */
  
+#ifndef _OPTNONLIN_TYPES_H_
+#define _OPTNONLIN_TYPES_H_
 
+typedef double TcoordType;
+typedef double TresultType;
 
-/* ----- END OF result.cc  ----- */
+#endif // include guard
+
+/* ----- END OF types.h  ----- */
