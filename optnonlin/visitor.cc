@@ -40,6 +40,7 @@
 #include <iomanip>
 #include <cmath>
 #include <visitor.h>
+#include <util.h>
 
 void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
 {

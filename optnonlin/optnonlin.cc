@@ -344,9 +344,106 @@ int main(int iargc, char* argv[])
       is >> calibOutSeries;
       is >> wid2CalibOut;
     }
-
+    // check data header consistency
+    if (vm.count("verbose")) 
+    { 
+      cout << "optnonlin: checking data consistency..." << endl;
+    }
+    sff::WID2compare compare(sff::Fnsamples | sff::Fdt | sff::Fdate);
+    if (!compare (wid2CalibIn, wid2CalibOut))
+    {
+      throw std::string("Inconsistant time series header information.")
+    }
     // prepare data for computation
+    // TODO TODO TODO TODO TODO
+    // use unique_ptr
+    datrw::Tdseries* dif2Series = new datrw::Tdseries(calibOutSeries.size());
+    datrw::Tdseries* difSeries = new datrw::Tdseries(calibOutSeries.size());
+    datrw::Tdseries* squareSeries = 0;
+    datrw::Tdseries* cubeSeries = 0;
+    util::dif2(calibOutSeries, *dif2Series, wid2CalibIn.dt)
+    util::dif(calibOutSeries, *difSeries, wid2CalibIn.dt)
+    if(! vm.count("linear"))
+    {
+      squareSeries = new datrw::Tdseries(calibOutSeries.size());
+      cubeSeries = new datrw::Tdseries(calibOutSeries.size());
+      util::square(calibOutSeries, *squareSeries);
+      util::cube(calibOutSeries, *cubeSeries);
+    }
+
+    // create global algorithm and set up parameter space
+    if (vm.count("verbose"))
+    {
+      cout << "optnonlin: Setting up parameter space ..." << endl;
+    }
+    // create parameter space builder
+    opt::ParameterSpaceBuilder<TcoordType, TresultType>* builder =
+      new opt::StandardParameterSpaceBuilder<TcoordType, TresultType>;
+    // gridsearch algorithm
+    opt::GlobalAlgorithm<TcoordType, TresultType>* algo = 
+      new opt::GridSearch<TcoordType, TresultType>(builder, numThreads);
+
+    opt::ParameterSpaceVisitor<TcoordType, TresultType>* app = 0;
+    if (vm.count("linear"))
+    {
+      // TODO TODO TODO TODO
+      // implementation missing
+      app = new LinApplication app(calibInSeries, *dif2Series, *difSeries,
+          calibOutSeries, vm.count("verbose"));
+    } else
+    {
+      app = new NonLinApplication app(calibInSeries, *dif2Series, *difSeries,
+          calibOutSeries, *squareSeries, *cubeSeries, vm.count("verbose"));
+    }
+
+    algo->constructParameterSpace();
+    if (vm.count("verbose"))
+    {
+      if (vm.count("linear"))
+      {
+        cout << "optnonlin: Sending linear application through parameter space "
+          << "grid ..." << endl;
+      } else
+      {
+        cout << "optnonlin: Sending nonlinear application through parameter "
+          << "space grid ..." << endl;
+      }
+    }
+    algo->execute(app);
+
+    // collect results and write to outpath
+    std::ofstream ofs(outpath.string().c_str());
+    opt::Iterator<TcoordType, TresultType> it = 
+      algo->getParameterSpace().createIterator(opt::ForwardNodeIter);
+
+    if (vm.count("verbose"))
+    {
+      cout << "optnonlin: Collecting results from parameter space grid ..."
+        << endl
+        << "optnonlin: Writing result file ..."
+        << endl;
+    }
+
+    for (it.first(); !it.isDone(); ++it)
+    {
+      std::vector<TcoordType> const& c = (*it)->getCoordinates();
+      for (std::vector<TcoordType>::const_iterator cit(c.begin());
+          cit != c.end(); ++cit)
+      {
+        ofs << std::setw(12) << std::fixed << std::left << *cit << " ";
+      }
+      ofs << "    ";
+      // TODO TODO TODO TODO TODO TODO TODO
+      // implement correctly
+      (*it)->getResultData().writeLine(ofs);
+    }
+
     // TODO TODO TODO TODO TODO TODO
+    // clean up
+    delete algo;
+    delete app;
+    delete builder;
+
   }
   catch (std::string e) 
   {
