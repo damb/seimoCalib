@@ -377,6 +377,8 @@ int main(int iargc, char* argv[])
       cout << "optnonlin: Setting up parameter space ..." << endl;
     }
     // create parameter space builder
+    // TODO TODO TODO TODO
+    // get parameter order of the builder
     opt::ParameterSpaceBuilder<TcoordType, TresultType>* builder =
       new opt::StandardParameterSpaceBuilder<TcoordType, TresultType>;
     // gridsearch algorithm
@@ -386,8 +388,6 @@ int main(int iargc, char* argv[])
     opt::ParameterSpaceVisitor<TcoordType, TresultType>* app = 0;
     if (vm.count("linear"))
     {
-      // TODO TODO TODO TODO
-      // implementation missing
       app = new LinApplication app(calibInSeries, *dif2Series, *difSeries,
           calibOutSeries, vm.count("verbose"));
     } else

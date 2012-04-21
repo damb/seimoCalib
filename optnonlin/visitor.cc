@@ -42,6 +42,50 @@
 #include <visitor.h>
 #include <util.h>
 
+/* -------------------------------------------------------------------------- */
+void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
+{
+  std::vector<TcoordType> const& coordinates = node->getCoordinates();
+
+  
+  datrw::Tdseries a0TimesMyDif2(McalibInSeries.size());
+  datrw::Tdseries a1TimesMyDif(McalibInSeries.size());
+  datrw::Tdseries a2TimesMy(McalibInSeries.size());
+
+  // multiply series with coordinate factor
+  util::multiply(MyDif2, a0TimesMyDif2, coordinates[0]);
+  util::multiply(MyDif, a1TimesMyDif, coordinates[1]);
+  util::multiply(My, a2TimesMy, coordinates[2]);
+
+  datrw::Tdseries sum(McalibInSeries.size());
+  // compute sum of series
+  for (size_t j=a0TimesMyDif2.f(); j<=a0TimesMyDif2.l(); ++j)
+  {
+    sum[j] = a0TimesMyDif2[j]+a1TimesMyDif[j]+a2TimesMy[j]-McalibInSeries[j];
+  }
+  // compute square of series
+  for (size_t j=sum.f(); j<=sum.l(); ++j) { sum[j] = sum[j]*sum[j]; }
+
+  TresultType result = 0;
+  for (size_t j=sum.f(); j<=sum.l(); ++j) { result += sum[j]; }
+  
+  result/=sum.size();
+  result = sqrt(result);
+  node->setResultData(result);
+  node->setComputed();
+
+  if (Mverbose) 
+  { 
+    // without loop cause if using multiple threads to avoid mixing output up
+    std::cout << "Parameter configuration: "
+      << std::setw(12) << std::fixed << std::right << coordinates[0] << " "
+      << std::setw(12) << std::fixed << std::right << coordinates[1] << " "
+      << std::setw(12) << std::fixed << std::right << coordinates[2]
+      << "\nResult: " << result << std::endl;
+  }
+} // function LinApplication::operator()
+
+/* -------------------------------------------------------------------------- */
 void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
 {
   std::vector<TcoordType> const& coordinates = node->getCoordinates();
@@ -70,7 +114,7 @@ void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
   // compute square of series
   for (size_t j=sum.f(); j<=sum.l(); ++j) { sum[j] = sum[j]*sum[j]; }
 
-  double result = 0;
+  TresultType result = 0;
   for (size_t j=sum.f(); j<=sum.l(); ++j) { result += sum[j]; }
   
   result/=sum.size();

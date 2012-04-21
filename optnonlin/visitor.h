@@ -44,7 +44,68 @@
 namespace opt = optimize;
 /*!
  * \a liboptimizexx parameter space visitor which acutally is the forward
- * algorithm of the optimization.
+ * algorithm of the linear model optimization for a seismometer.
+ */
+class LinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
+{
+  public:
+    //! constructor
+    LinApplication(datrw::Tdseries const& calib_in_series, 
+        datrw::Tdseries const& y_dif2, datrw::Tdseries const& y_dif,
+        datrw::Tdseries const& y, bool verbose=false) :
+      McalibInSeries(calib_in_series), MyDif2(y_dif2), MyDif(y_dif), My(y),
+      Mverbose(verbose)
+    { 
+      if (McalibInSeries.size() != MyDif2.size() || 
+          McalibInSeries.size() != MyDif.size() ||
+          McalibInSeries.size() != My.size())
+      {
+        throw std::string("Inconsistent length of time series.");
+      }
+    }
+    //! Visit function for a liboptimizexx grid.
+    /*!
+     * Does nothing by default.
+     * Since a grid has no coordinates the body of this function is empty.
+     *
+     * \param grid Grid to be visited.
+     */
+    virtual void operator()(opt::Grid<TcoordType, TresultType>* grid) { }
+    //! Visit function / application for a liboptimizexx node.
+    /*!
+     * Computes the \f$RMS\f$ error as follows:
+     * \f[
+     *    RMS = \sqrt{\frac{\sum_l=1^N\left(
+     *      a_0\ddot{y}_l+a_1\dot{y}_l+a_2y_l+a_3y_l^2+a_4y_l^3-\ddot{u}_l
+     *      \right)^2}{N}}
+     * \f]
+     * where \f$y\f$ is the displacement of of the seismometer and
+     * \f$\ddot{u}\f$ the acceleration which is proportional to the force
+     * affecting the seismic mass. \f$N\f$ are the number of samples in the time
+     * series.
+     *
+     * \param node Node to be visited.
+     *
+     * \todo What about using the normalized RMS error.
+     */
+    virtual void operator()(opt::Node<TcoordType, TresultType>* node);
+  private:
+    //! time series containing the calibration signal
+    datrw::Tdseries& McalibInSeries;
+    //! second derivative of the output time series of the seismometer
+    datrw::Tdseries& MyDif2;
+    //! derivative of the output time series of the seismometer
+    datrw::Tdseries& MyDif;
+    //! output time series of the seismometer
+    datrw::Tdseries& My;
+    //! verbosity flag
+    bool Mverbose;
+}; // class LinApplication
+
+/* -------------------------------------------------------------------------- */
+/*!
+ * \a liboptimizexx parameter space visitor which acutally is the forward
+ * algorithm of the nonlinear model optimization.
  */
 class NonLinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
 {
