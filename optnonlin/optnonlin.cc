@@ -44,15 +44,20 @@
 #define OPTNONLIN_VERSION "V0.1"
 #define OPTNONLIN_LICENSE "GPLv2"
 
+#include <vector>
+#include <string>
 #include <fstream>
+#include <algorithm>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
 #include <optimizexx/globalalgorithms/gridsearch.h>
 #include <optimizexx/standardbuilder.h>
 #include <optimizexx/iterator.h>
+#include <datrwxx/readany.h>
 #include <types.h>
 #include <visitor.h>
+#include <validate.h>
 #include <util.h>
 
 namespace po = boost::program_options;
@@ -66,6 +71,24 @@ using std::endl;
 typedef double TcoordType;
 typedef NonLinResult TresultType;
 
+/* ---------------------------------------------------------------------------*/
+//! overloaded operator< to sort param commandline args
+bool operator<(opt::StandardParameter<double> const& p1,
+    opt::StandardParameter<double> const& p2)
+{
+  if (p1.getId() < p2.getId()) { return true; }
+  return false;
+}
+
+/* ---------------------------------------------------------------------------*/
+bool operator==(opt::StandardParameter<double> const& p1
+    opt::StandardParameter<double> const& p2)
+{
+  if (p1.getId() == p2.getId()) { return true; }
+  return false;
+}
+/* ---------------------------------------------------------------------------*/
+
 int main(int iargc, char* argv[])
 {
   // define usage information
@@ -76,7 +99,7 @@ int main(int iargc, char* argv[])
     "    SVN: $Id$\n" 
     " Author: Daniel Armbruster" "\n"
     "  Usage: optnonlin [-v|--verbose] [-o|--overwrite] [-t|--threads]" "\n"
-    "                   [--config-file arg] [--linear]" "\n"
+    "                   [--config-file arg] [--linear] [--iformat arg]" "\n"
     "                   -p|--param arg -p|--param arg -p|--param arg" "\n"
     "                   [-p|--param arg -p|--param arg]" "\n"
     "                   --calib-in arg --calib-out arg OUTFILE" "\n"
@@ -134,6 +157,8 @@ int main(int iargc, char* argv[])
     defaultConfigFilePath /= ".optimize";
     defaultConfigFilePath /= "optnonlin.rc";
     size_t numThreads = boost::thread::hardware_concurrency();
+    std::string iformat("bin");
+    std::vector<opt::StandardParameter<double>> params;
 
     // declare only commandline options
     po::options_description generic("Commandline options");
@@ -141,12 +166,11 @@ int main(int iargc, char* argv[])
       ("version,V", "Show version of optcalex.")
       ("help,h", "Print this help.")
       ("xhelp", "Print extended help text.")
-      ("verbose,v",po::value<int>()->implicit_value(1), "Be verbose.")
+      ("verbose,v", po::value<int>()->implicit_value(1), "Be verbose.")
       ("overwrite,o", "Overwrite OUTFILE")
       ("config-file", po::value<fs::path>(&configFilePath)->default_value(
         defaultConfigFilePath), "Path to optcalex configuration file.")
-      ("threads,t",po::value<size_t>(&numThreads)->default_value(numThreads),
-       "Number of threads to start for parallel computation")
+      ("linear,l", "Perform a search based on a linear model")
       ;
 
     // declare both commandline and configuration file options
@@ -154,10 +178,13 @@ int main(int iargc, char* argv[])
         "Both Commandline and optcalex configuration file options");
     config.add_options()
       ("param,p",
-       po::value<std::vector<opt::StandardParameter<double>>>()->required()->
-        composing(),
+       po::value<std::vector<opt::StandardParameter<double>>>(
+         &params)->required(),
        "Unknown parameter to search for.")
-      ("linear,l", "Perform a search based on a linear model")
+      ("threads,t", po::value<size_t>(&numThreads)->default_value(numThreads),
+       "Number of threads to start for parallel computation")
+      ("iformat", po::value<std::string>(&iformat)->default_value(iformat),
+       "Format of input files (default: 'bin').")
       ("calib-in", po::value<fs::path>()->required(),
        "Filepath of calibration input signal file.")
       ("calib-out", po::value<fs::path>()->required(), 
@@ -258,8 +285,68 @@ int main(int iargc, char* argv[])
     fs::path calibInfile(vm["calib-in"].as<fs::path>());
     fs::path calibOutfile(vm["calib-out"].as<fs::path>());
 
-    // fetch search parameters check and sort them
+    // check and sort unknown parameters
+    std::sort(params.begin(), params.end());
+    std::unique(params.begin(), params.end());
+    if(vm.count("linear"))
+    {
+      if (params.size() != 3 || params.at(0).getId() != "a0" ||
+          params.at(1).getId() != "a1" || params.at(2).getId() != "a2" )
+      {
+        throw std::string("Illegal parameter specification.");
+      }
+    } else
+    {
+      if (params.size() != 5 || params.at(0).getId() != "a0" ||
+          params.at(1).getId() != "a1" || params.at(2).getId() != "a2" ||
+          params.at(3).getId() != "a3" || params.at(4).getId() != "a4")
+      {
+        throw std::string("Illegal parameter specification.");
+      }
+    }
 
+    // save addresses of unknown parameters
+    std::vector<opt::StandardParameter<double> const*> param_adds;
+    param_adds.reserve(5);
+    for (auto cit params.cbegin(); cit != params.cend(); ++cit)
+    {
+      param_adds.push_back(&cit);
+    }
+
+    // read data files
+    datrw::Tdseries calibInSeries;
+    datrw::Tdseries calibOutSeries;
+    sff::WID2 wid2CalibIn;
+    sff::WID2 wid2CalibOut;
+    {
+#if BOOST_FILESYSTEM_VERSION == 2
+      std::ifstream ifs(calibInfile.string().c_str(), 
+          datrw::ianystream::openmode(iformat));
+#else
+      std::ifstream ifs(calibInfile.c_str(), 
+          datrw::ianystream::openmode(iformat));
+#endif
+      if (!ifs.good()) { throw std::string("Cannot open input file!"); }
+      datrw::ianystream is(ifs, iformat);    
+      is >> calibInSeries;
+      is >> wid2CalibIn;
+    }
+    {
+#if BOOST_FILESYSTEM_VERSION == 2
+      std::ifstream ifs(calibOutfile.string().c_str(), 
+          datrw::ianystream::openmode(iformat));
+#else
+      std::ifstream ifs(calibOutfile.c_str(), 
+          datrw::ianystream::openmode(iformat));
+#endif
+      if (!ifs.good()) { throw std::string("Cannot open input file!"); }
+      datrw::ianystream is(ifs, iformat);    
+      is >> calibOutSeries;
+      is >> wid2CalibOut;
+    }
+
+    // prepare data for computation
+    // TODO TODO TODO TODO TODO TODO
   }
   catch (std::string e) 
   {

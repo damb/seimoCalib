@@ -77,10 +77,8 @@ void validate(boost::any& v, const std::vector<std::string>& values,
     throw po::validation_error("Invalid parameter id.");
   }
   std::vector<double> param_values;
-  auto it(values.begin());
-  ++it;
-  std::transform(it, values.end(), std::back_inserter(param_values),
-      string2Double);
+  std::transform(values.begin()+1, values.end(),
+      std::back_inserter(param_values), string2Double);
   v = opt::StandardParameter<double> (id, param_values[0], param_values[1],
         param_values[2]);
 } // function validate
