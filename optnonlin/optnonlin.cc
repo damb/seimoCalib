@@ -41,8 +41,8 @@
  * ============================================================================
  */
  
-#define OPTCALEX_VERSION "V0.1"
-#define OPTCALEX_LICENSE "GPLv2"
+#define OPTNONLIN_VERSION "V0.1"
+#define OPTNONLIN_LICENSE "GPLv2"
 
 #include <fstream>
 #include <boost/program_options.hpp>
@@ -51,6 +51,9 @@
 #include <optimizexx/globalalgorithms/gridsearch.h>
 #include <optimizexx/standardbuilder.h>
 #include <optimizexx/iterator.h>
+#include <types.h>
+#include <visitor.h>
+#include <util.h>
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -65,6 +68,213 @@ typedef NonLinResult TresultType;
 
 int main(int iargc, char* argv[])
 {
+  // define usage information
+  char usage_text[]=
+  {
+    "Version: "OPTNONLIN_VERSION "\n"
+    "License: "OPTNONLIN_LICENSE "\n" 
+    "    SVN: $Id$\n" 
+    " Author: Daniel Armbruster" "\n"
+    "  Usage: optnonlin [-v|--verbose] [-o|--overwrite] [-t|--threads]" "\n"
+    "                   [--config-file arg] [--linear]" "\n"
+    "                   -p|--param arg -p|--param arg -p|--param arg" "\n"
+    "                   [-p|--param arg -p|--param arg]" "\n"
+    "                   --calib-in arg --calib-out arg OUTFILE" "\n"
+    "     or: optnonlin -V|--version" "\n"
+    "     or: optnonlin -h|--help" "\n"
+    "     or: optnonlin --xhelp" "\n"
+  }; // usage text
+
+  // define notes text to provide additional information on commandline
+  // arguments
+
+  char notes_text[]=
+  {
+    "\n-----------------------\n"
+    "Nonlinear system model:
+    "Parameter search for a nonlinear system is based on the following" "\n"
+    "model:" "\n"
+    "   a_0*y''+a_1*y'+a_2*y+a_3*y^2+a_4*y^3 = u''" "\n"
+    "where a_0, a_1, a_2, a_3 and a_4 are the unknown parameters, y is the" "\n"
+    "output time series of the seismometer and u'' is the acceleration" "\n"
+    "which is proportional to the calibration force affecting the seismic" "\n"
+    "mass." "\n"
+    "\n--------------------\n"
+    "Linear system model:" "\n"
+    "If using the '--linear' option optnonlin will perform a search based" "\n"
+    "on the linear model equation for a seismometer:" "\n"
+    "   a_0*y''+a_1*y'+a_2*y = u''" "\n"
+    "where a_0, a_1 and a_2 are the unknown parameters, y is the output" "\n"
+    "time series of the seismometer and u'' is the acceleration which is" "\n"
+    "proportional to the calibration force affecting the seismic mass." "\n"
+    "Note that if the option '--linear' is specified the commandline" "\n"
+    "arguments for the unknown parameters 
+    "'-p|--param a3 start end delta' and" "\n"
+    "'-p|--param a4 start end delta' will be ignored if passed." "\n"
+    "\n-------------------------------------------------------\n"
+    "Additional notes on optnonlin unknown parameter syntax:\n"
+    "To perform a parameter search with optnonlin search ranges for the" "\n"
+    "unknown parameters must specified. To pass such a parameter on the" "\n"
+    "commandline the following syntax has to be used:" "\n"
+    "-p|--param id start end delta" "\n"
+    "where 
+    "   id      id of the unknown parameter" "\n"
+    "           (either 'a0' or 'a1' or 'a2' or 'a3' or 'a4')" "\n"
+    "   start   start of the search range" "\n"
+    "   end     end of the search range" "\n"
+    "   delta   stepwidth in search range" "\n\n"
+    "Note if two parameters with the same id were specified the last one" "\n"
+    "will be taken." "\n"
+  };
+
+  try
+  {
+    fs::path configFilePath;
+    fs::path defaultConfigFilePath(std::string(getenv("HOME")));
+    defaultConfigFilePath /= ".optimize";
+    defaultConfigFilePath /= "optnonlin.rc";
+    size_t numThreads = boost::thread::hardware_concurrency();
+
+    // declare only commandline options
+    po::options_description generic("Commandline options");
+    generic.add_options()
+      ("version,V", "Show version of optcalex.")
+      ("help,h", "Print this help.")
+      ("xhelp", "Print extended help text.")
+      ("verbose,v",po::value<int>()->implicit_value(1), "Be verbose.")
+      ("overwrite,o", "Overwrite OUTFILE")
+      ("config-file", po::value<fs::path>(&configFilePath)->default_value(
+        defaultConfigFilePath), "Path to optcalex configuration file.")
+      ("threads,t",po::value<size_t>(&numThreads)->default_value(numThreads),
+       "Number of threads to start for parallel computation")
+      ;
+
+    // declare both commandline and configuration file options
+    po::options_description config(
+        "Both Commandline and optcalex configuration file options");
+    config.add_options()
+      ("param,p",
+       po::value<std::vector<opt::StandardParameter<double>>>()->required()->
+        composing(),
+       "Unknown parameter to search for.")
+      ("linear,l", "Perform a search based on a linear model")
+      ("calib-in", po::value<fs::path>()->required(),
+       "Filepath of calibration input signal file.")
+      ("calib-out", po::value<fs::path>()->required(), 
+       "Filepath of calibration output signal file.")
+      ;
+
+    // Hidden options, will be allowed both on command line and
+    // in config file, but will not be shown to the user.
+    po::options_description hidden("Hidden options");
+    hidden.add_options()
+      ("output-file", po::value<fs::path>()->required(),
+       "Filepath of OUTFILE.")
+      ;
+
+    po::options_description cmdline_options;
+    cmdline_options.add(generic).add(config).add(hidden);
+
+    po::options_description config_file_options;
+    config_file_options.add(config).add(hidden);
+
+    po::options_description visible_options("Allowed options", 80);
+    visible_options.add(generic).add(config);
+
+    po::positional_options_description p;
+    p.add("output-file", 1);
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(iargc, argv).
+      options(cmdline_options).positional(p).run(), vm);
+    // help requested? print help
+    if (vm.count("help"))
+    {
+      cout << usage_text
+        << "------------------------------------------------------------\n";
+      cout << visible_options;
+      exit(0);
+    } else
+    if (vm.count("xhelp"))
+    {
+      cout << usage_text
+        << "------------------------------------------------------------\n";
+      cout << visible_options;
+      cout << notes_text << std::endl;
+      exit(0);
+    } else
+    if (vm.count("version"))
+    {
+      cout << "$Id$" << endl;
+      cout << "Version: " << OPTNONLIN_VERSION << endl;
+      exit(0);
+    }
+    po::notify(vm);
+
+    if (vm.count("verbose"))
+    {
+      cout << "optnonlin: Opening optnonlin configuration file." << std::endl;
+    }
+    // reading configuration file
+#if BOOST_FILESYSTEM_VERSION == 2
+    std::ifstream ifs(configFilePath.string().c_str());
+#else
+    std::ifstream ifs(configFilePath.c_str());
+#endif
+    if (!ifs)
+    {
+      // if default configuration file does not exist -> create default
+      // optnonlin configuration file
+      if (configFilePath == defaultConfigFilePath &&
+          !fs::exists(defaultConfigFilePath))
+      {
+        // create directory
+        fs::create_directory(defaultConfigFilePath.parent_path());
+        // create default configuration file
+#if BOOST_FILESYSTEM_VERSION == 2
+        std::ofstream ofs(defaultConfigFilePath.string().c_str());
+#else
+        std::ofstream ofs(defaultConfigFilePath.c_str());
+#endif
+        ofs.close();
+      } else
+      {
+        throw std::string(
+            "Can not open config file '"+configFilePath.string()+"'");
+      }
+    }
+    else
+    {
+      po::store(parse_config_file(ifs, config_file_options), vm);
+      po:: notify(vm);
+    }
+
+    // fetch commandline arguments
+    fs::path outpath(vm["output-file"].as<fs::path>());
+    if (fs::exists(outpath) && ! vm.count("overwrite"))
+    {
+      throw std::string("OUTFILE exists. Specify option 'overwrite'.");
+    }
+    fs::path calibInfile(vm["calib-in"].as<fs::path>());
+    fs::path calibOutfile(vm["calib-out"].as<fs::path>());
+
+    // fetch search parameters check and sort them
+
+  }
+  catch (std::string e) 
+  {
+    cerr << "ERROR: " << e << "\n";
+    cerr << usage_text;
+    return 1;
+  }
+  catch(std::exception& e)
+  {
+    cerr << "ERROR: Exception of unknown type!\n";
+    cerr << usage_text;
+    return 1;
+  }    
+
+  return 0;
 
 } // function main
 
