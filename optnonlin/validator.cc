@@ -39,12 +39,12 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
-#include <stdexcept>
-#include <validator.h>
+#include "validator.h"
 
 namespace po = boost::program_options;
 namespace opt = optimize;
 
+/* -------------------------------------------------------------------------- */
 namespace
 {
   //! helper function which converts a string into a double value
@@ -54,7 +54,7 @@ namespace
     double val;
     if (!(iss >> val))
     {
-      throw po::validation_error("Invalid parameter specification.");
+      throw po::validation_error(po::validation_error::invalid_option_value);
     }
     return val;
   }
@@ -67,18 +67,18 @@ void validate(boost::any& v, const std::vector<std::string>& values,
 
   if (values.size() != 4)
   {
-    throw po::validation_error("Invalid parameter specification.");
+    throw po::validation_error(po::validation_error::invalid_option_value);
   }
 
   const std::string id = values.at(0);
   if (("a0" != id) && ("a1" != id) && ("a2" != id) && ("a3" != id) &&
       ("a4" != id))
   {
-    throw po::validation_error("Invalid parameter id.");
+    throw po::validation_error(po::validation_error::invalid_option_value);
   }
   std::vector<double> param_values;
   std::transform(values.begin()+1, values.end(),
-      std::back_inserter(param_values), string2Double);
+      std::back_inserter(param_values), ::string2Double);
   v = opt::StandardParameter<double> (id, param_values[0], param_values[1],
         param_values[2]);
 } // function validate

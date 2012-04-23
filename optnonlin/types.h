@@ -33,12 +33,14 @@
  * 
  * ============================================================================
  */
+
+#include "result.h"
  
 #ifndef _OPTNONLIN_TYPES_H_
 #define _OPTNONLIN_TYPES_H_
 
 typedef double TcoordType;
-typedef double TresultType;
+typedef OptResult TresultType;
 
 #endif // include guard
 

@@ -38,12 +38,15 @@
  
 #include <iostream>
 #include <iomanip>
+#include <vector>
 #include <cmath>
-#include <visitor.h>
-#include <util.h>
+#include "visitor.h"
+#include "util.h"
+#include "result.h"
+#include "types.h"
 
 /* -------------------------------------------------------------------------- */
-void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
+void LinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
 {
   std::vector<TcoordType> const& coordinates = node->getCoordinates();
 
@@ -57,20 +60,28 @@ void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
   util::multiply(MyDif, a1TimesMyDif, coordinates[1]);
   util::multiply(My, a2TimesMy, coordinates[2]);
 
-  datrw::Tdseries sum(McalibInSeries.size());
-  // compute sum of series
-  for (size_t j=a0TimesMyDif2.f(); j<=a0TimesMyDif2.l(); ++j)
+  datrw::Tdseries differenceSeries(McalibInSeries.size()); 
+  // compute difference of series
+  for (int j=a0TimesMyDif2.f(); j<=a0TimesMyDif2.l(); ++j)
   {
-    sum[j] = a0TimesMyDif2[j]+a1TimesMyDif[j]+a2TimesMy[j]-McalibInSeries[j];
+    differenceSeries(j) = fabs(a0TimesMyDif2(j) + a1TimesMyDif(j) +
+          a2TimesMy(j) - McalibInSeries(j));
   }
-  // compute square of series
-  for (size_t j=sum.f(); j<=sum.l(); ++j) { sum[j] = sum[j]*sum[j]; }
+  // compute square of difference of series
+  double md_numerator = 0;
+  double md_denominator = 0;
+  double rms_numerator = 0;
+  double rms_denominator = 0;
+  for (int j=differenceSeries.f(); j<=differenceSeries.l(); ++j)
+  {
+    md_numerator += differenceSeries(j);
+    rms_numerator += pow(differenceSeries(j), 2.);
+    md_denominator += fabs(McalibInSeries(j));
+    rms_denominator += pow(McalibInSeries(j), 2.);
+  }
 
-  TresultType result = 0;
-  for (size_t j=sum.f(); j<=sum.l(); ++j) { result += sum[j]; }
-  
-  result/=sum.size();
-  result = sqrt(result);
+  TresultType result(md_numerator / md_denominator, 
+      sqrt(rms_numerator / rms_denominator));
   node->setResultData(result);
   node->setComputed();
 
@@ -104,21 +115,29 @@ void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
   util::multiply(MySquare, a3TimesMySquare, coordinates[3]);
   util::multiply(MyCube, a4TimesMyCube, coordinates[4]);
 
-  datrw::Tdseries sum(McalibInSeries.size());
-  // compute sum of series
-  for (size_t j=a0TimesMyDif2.f(); j<=a0TimesMyDif2.l(); ++j)
+  datrw::Tdseries differenceSeries(McalibInSeries.size()); 
+  // compute difference of series
+  for (int j=a0TimesMyDif2.f(); j<=a0TimesMyDif2.l(); ++j)
   {
-    sum[j] = a0TimesMyDif2[j]+a1TimesMyDif[j]+a2TimesMy[j]+a3TimesMySquare[j]
-      +a4TimesMyCube[j]-McalibInSeries[j];
+    differenceSeries(j) = fabs(a0TimesMyDif2(j) + a1TimesMyDif(j) +
+          a2TimesMy(j) + a3TimesMySquare(j) + a4TimesMyCube(j) -
+          McalibInSeries(j));
   }
-  // compute square of series
-  for (size_t j=sum.f(); j<=sum.l(); ++j) { sum[j] = sum[j]*sum[j]; }
+  // compute square of difference of series
+  double md_numerator = 0;
+  double md_denominator = 0;
+  double rms_numerator = 0;
+  double rms_denominator = 0;
+  for (int j=differenceSeries.f(); j<=differenceSeries.l(); ++j)
+  {
+    md_numerator += differenceSeries(j);
+    rms_numerator += pow(differenceSeries(j), 2.);
+    md_denominator += fabs(McalibInSeries(j));
+    rms_denominator += pow(McalibInSeries(j), 2.);
+  }
 
-  TresultType result = 0;
-  for (size_t j=sum.f(); j<=sum.l(); ++j) { result += sum[j]; }
-  
-  result/=sum.size();
-  result = sqrt(result);
+  TresultType result(md_numerator / md_denominator, 
+      sqrt(rms_numerator / rms_denominator));
   node->setResultData(result);
   node->setComputed();
 

@@ -54,11 +54,12 @@
 #include <optimizexx/globalalgorithms/gridsearch.h>
 #include <optimizexx/standardbuilder.h>
 #include <optimizexx/iterator.h>
+//#include <optimizexx/application.h>
 #include <datrwxx/readany.h>
-#include <types.h>
-#include <visitor.h>
-#include <validate.h>
-#include <util.h>
+#include "types.h"
+#include "visitor.h"
+#include "validator.h"
+#include "util.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -68,21 +69,18 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-typedef double TcoordType;
-typedef NonLinResult TresultType;
-
 /* ---------------------------------------------------------------------------*/
 //! overloaded operator< to sort param commandline args
-bool operator<(opt::StandardParameter<double> const& p1,
-    opt::StandardParameter<double> const& p2)
+bool operator<(opt::StandardParameter<TcoordType> const& p1,
+    opt::StandardParameter<TcoordType> const& p2)
 {
   if (p1.getId() < p2.getId()) { return true; }
   return false;
 }
 
 /* ---------------------------------------------------------------------------*/
-bool operator==(opt::StandardParameter<double> const& p1
-    opt::StandardParameter<double> const& p2)
+bool operator==(opt::StandardParameter<TcoordType> const& p1,
+    opt::StandardParameter<TcoordType> const& p2)
 {
   if (p1.getId() == p2.getId()) { return true; }
   return false;
@@ -114,7 +112,7 @@ int main(int iargc, char* argv[])
   char notes_text[]=
   {
     "\n-----------------------\n"
-    "Nonlinear system model:
+    "Nonlinear system model:" "\n"
     "Parameter search for a nonlinear system is based on the following" "\n"
     "model:" "\n"
     "   a_0*y''+a_1*y'+a_2*y+a_3*y^2+a_4*y^3 = u''" "\n"
@@ -131,7 +129,7 @@ int main(int iargc, char* argv[])
     "time series of the seismometer and u'' is the acceleration which is" "\n"
     "proportional to the calibration force affecting the seismic mass." "\n"
     "Note that if the option '--linear' is specified the commandline" "\n"
-    "arguments for the unknown parameters 
+    "arguments for the unknown parameters" "\n"
     "'-p|--param a3 start end delta' and" "\n"
     "'-p|--param a4 start end delta' will be ignored if passed." "\n"
     "\n-------------------------------------------------------\n"
@@ -140,7 +138,7 @@ int main(int iargc, char* argv[])
     "unknown parameters must specified. To pass such a parameter on the" "\n"
     "commandline the following syntax has to be used:" "\n"
     "-p|--param id start end delta" "\n"
-    "where 
+    "where" "\n"
     "   id      id of the unknown parameter" "\n"
     "           (either 'a0' or 'a1' or 'a2' or 'a3' or 'a4')" "\n"
     "   start   start of the search range" "\n"
@@ -158,7 +156,7 @@ int main(int iargc, char* argv[])
     defaultConfigFilePath /= "optnonlin.rc";
     size_t numThreads = boost::thread::hardware_concurrency();
     std::string iformat("bin");
-    std::vector<opt::StandardParameter<double>> params;
+    std::vector<opt::StandardParameter<TcoordType>> params;
 
     // declare only commandline options
     po::options_description generic("Commandline options");
@@ -178,7 +176,7 @@ int main(int iargc, char* argv[])
         "Both Commandline and optcalex configuration file options");
     config.add_options()
       ("param,p",
-       po::value<std::vector<opt::StandardParameter<double>>>(
+       po::value<std::vector<opt::StandardParameter<TcoordType>>>(
          &params)->required(),
        "Unknown parameter to search for.")
       ("threads,t", po::value<size_t>(&numThreads)->default_value(numThreads),
@@ -306,11 +304,11 @@ int main(int iargc, char* argv[])
     }
 
     // save addresses of unknown parameters
-    std::vector<opt::StandardParameter<double> const*> param_adds;
+    std::vector<opt::StandardParameter<TcoordType> const*> param_adds;
     param_adds.reserve(5);
-    for (auto cit params.cbegin(); cit != params.cend(); ++cit)
+    for (auto it(params.begin()); it != params.end(); ++it)
     {
-      param_adds.push_back(&cit);
+      param_adds.push_back(&(*it));
     }
 
     // read data files
@@ -352,17 +350,15 @@ int main(int iargc, char* argv[])
     sff::WID2compare compare(sff::Fnsamples | sff::Fdt | sff::Fdate);
     if (!compare (wid2CalibIn, wid2CalibOut))
     {
-      throw std::string("Inconsistant time series header information.")
+      throw std::string("Inconsistant time series header information.");
     }
     // prepare data for computation
-    // TODO TODO TODO TODO TODO
-    // use unique_ptr
     datrw::Tdseries* dif2Series = new datrw::Tdseries(calibOutSeries.size());
     datrw::Tdseries* difSeries = new datrw::Tdseries(calibOutSeries.size());
     datrw::Tdseries* squareSeries = 0;
     datrw::Tdseries* cubeSeries = 0;
-    util::dif2(calibOutSeries, *dif2Series, wid2CalibIn.dt)
-    util::dif(calibOutSeries, *difSeries, wid2CalibIn.dt)
+    util::dif2(calibOutSeries, *dif2Series, wid2CalibIn.dt);
+    util::dif(calibOutSeries, *difSeries, wid2CalibIn.dt);
     if(! vm.count("linear"))
     {
       squareSeries = new datrw::Tdseries(calibOutSeries.size());
@@ -377,22 +373,35 @@ int main(int iargc, char* argv[])
       cout << "optnonlin: Setting up parameter space ..." << endl;
     }
     // create parameter space builder
-    // TODO TODO TODO TODO
-    // get parameter order of the builder
     opt::ParameterSpaceBuilder<TcoordType, TresultType>* builder =
       new opt::StandardParameterSpaceBuilder<TcoordType, TresultType>;
+
     // gridsearch algorithm
     opt::GlobalAlgorithm<TcoordType, TresultType>* algo = 
       new opt::GridSearch<TcoordType, TresultType>(builder, numThreads);
 
+    // get parameter order of the builder and reorder parameters
+    std::vector<int> order;
+    if (vm.count("linear"))
+    {
+      order = builder->getParameterOrder(3);
+    } else
+    {
+      order = builder->getParameterOrder(5);
+    }
+    for (auto cit(order.cbegin()); cit != order.end(); ++cit)
+    {
+      algo->addParameter(param_adds[*cit]);
+    }
+
     opt::ParameterSpaceVisitor<TcoordType, TresultType>* app = 0;
     if (vm.count("linear"))
     {
-      app = new LinApplication app(calibInSeries, *dif2Series, *difSeries,
+      app = new LinApplication(calibInSeries, *dif2Series, *difSeries,
           calibOutSeries, vm.count("verbose"));
     } else
     {
-      app = new NonLinApplication app(calibInSeries, *dif2Series, *difSeries,
+      app = new NonLinApplication(calibInSeries, *dif2Series, *difSeries,
           calibOutSeries, *squareSeries, *cubeSeries, vm.count("verbose"));
     }
 
@@ -409,7 +418,7 @@ int main(int iargc, char* argv[])
           << "space grid ..." << endl;
       }
     }
-    algo->execute(app);
+    algo->execute(*app);
 
     // collect results and write to outpath
     std::ofstream ofs(outpath.string().c_str());
@@ -432,17 +441,15 @@ int main(int iargc, char* argv[])
       {
         ofs << std::setw(12) << std::fixed << std::left << *cit << " ";
       }
-      ofs << "    ";
-      // TODO TODO TODO TODO TODO TODO TODO
-      // implement correctly
-      (*it)->getResultData().writeLine(ofs);
+      ofs << "    " << std::setw(12) << std::fixed << std::left <<
+        (*it)->getResultData() << endl;
     }
 
-    // TODO TODO TODO TODO TODO TODO
     // clean up
     delete algo;
     delete app;
     delete builder;
+    delete dif2Series; delete difSeries; delete squareSeries; delete cubeSeries;
 
   }
   catch (std::string e) 

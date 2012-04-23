@@ -35,8 +35,9 @@
  */
  
 #include <optimizexx/application.h>
+#include <optimizexx/node.h>
 #include <datrwxx/types.h>
-#include <types.h>
+#include "types.h"
 
 #ifndef _OPTNONLIN_VISITOR_H_
 #define _OPTNONLIN_VISITOR_H_
@@ -46,7 +47,8 @@ namespace opt = optimize;
  * \a liboptimizexx parameter space visitor which acutally is the forward
  * algorithm of the linear model optimization for a seismometer.
  */
-class LinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
+class LinApplication :
+  public opt::ParameterSpaceVisitor<TcoordType, TresultType>
 {
   public:
     //! constructor
@@ -76,7 +78,7 @@ class LinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
      * Computes the \f$RMS\f$ error as follows:
      * \f[
      *    RMS = \sqrt{\frac{\sum_l=1^N\left(
-     *      a_0\ddot{y}_l+a_1\dot{y}_l+a_2y_l+a_3y_l^2+a_4y_l^3-\ddot{u}_l
+     *      a_0\ddot{y}_l+a_1\dot{y}_l+a_2y_l-\ddot{u}_l
      *      \right)^2}{N}}
      * \f]
      * where \f$y\f$ is the displacement of of the seismometer and
@@ -85,19 +87,17 @@ class LinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
      * series.
      *
      * \param node Node to be visited.
-     *
-     * \todo What about using the normalized RMS error.
      */
     virtual void operator()(opt::Node<TcoordType, TresultType>* node);
   private:
     //! time series containing the calibration signal
-    datrw::Tdseries& McalibInSeries;
+    datrw::Tdseries const& McalibInSeries;
     //! second derivative of the output time series of the seismometer
-    datrw::Tdseries& MyDif2;
+    datrw::Tdseries const& MyDif2;
     //! derivative of the output time series of the seismometer
-    datrw::Tdseries& MyDif;
+    datrw::Tdseries const& MyDif;
     //! output time series of the seismometer
-    datrw::Tdseries& My;
+    datrw::Tdseries const& My;
     //! verbosity flag
     bool Mverbose;
 }; // class LinApplication
@@ -107,7 +107,8 @@ class LinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
  * \a liboptimizexx parameter space visitor which acutally is the forward
  * algorithm of the nonlinear model optimization.
  */
-class NonLinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
+class NonLinApplication :
+  public opt::ParameterSpaceVisitor<TcoordType, TresultType>
 {
   public:
     //! constructor
@@ -122,7 +123,7 @@ class NonLinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
           McalibInSeries.size() != MyDif.size() ||
           McalibInSeries.size() != My.size() ||
           McalibInSeries.size() != MySquare.size() ||
-          McalibInSeries.size() != MySquare.cube())
+          McalibInSeries.size() != MyCube.size())
       {
         throw std::string("Inconsistent length of time series.");
       }
@@ -149,23 +150,21 @@ class NonLinApplication : opt::ParameterSpaceVisitor<TcoordType, TresultType>
      * series.
      *
      * \param node Node to be visited.
-     *
-     * \todo What about using the normalized RMS error.
      */
     virtual void operator()(opt::Node<TcoordType, TresultType>* node);
   private:
     //! time series containing the calibration signal
-    datrw::Tdseries& McalibInSeries;
+    datrw::Tdseries const& McalibInSeries;
     //! second derivative of the output time series of the seismometer
-    datrw::Tdseries& MyDif2;
+    datrw::Tdseries const& MyDif2;
     //! derivative of the output time series of the seismometer
-    datrw::Tdseries& MyDif;
+    datrw::Tdseries const& MyDif;
     //! output time series of the seismometer
-    datrw::Tdseries& My;
+    datrw::Tdseries const& My;
     //! square of the output time series of the seismometer
-    datrw::Tdseries& MySquare;
+    datrw::Tdseries const& MySquare;
     //! cube of the output time series of the seismometer
-    datrw::Tdseries& MyCube;
+    datrw::Tdseries const& MyCube;
     //! verbosity flag
     bool Mverbose;
 

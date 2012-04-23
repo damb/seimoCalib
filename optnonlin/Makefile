@@ -4,7 +4,7 @@
 # 
 # Copyright (c) 2012 by Daniel Armbruster (BFO Schiltach) 
 # 
-# optnonlin - use liboptimizexx to determine seimometer behaviour basing on a
+# optnonlin - use liboptimizexx to determine seimometer behaviour based on a
 # nonlinear model
 #
 # ----

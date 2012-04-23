@@ -1,15 +1,13 @@
-/*! \file validator.h
- * \brief Declaration of a custom validator for a \a liboptimizexx
- * StandardParameter for commandline parsing with boost program_options
+/*! \file result.cc
+ * \brief 
  * 
  * ----------------------------------------------------------------------------
  * 
  * $Id$
  * \author Daniel Armbruster
- * \date 20/04/2012
+ * \date 22/04/2012
  * 
- * Purpose: Declaration of a custom validator for a \a liboptimizexx
- * StandardParameter for commandline parsing with boost program_options 
+ * Purpose: 
  *
  * ----
  * This file is part of optnonlin.
@@ -31,30 +29,38 @@
  * Copyright (c) 2012 by Daniel Armbruster
  * 
  * REVISIONS and CHANGES 
- * 20/04/2012  V0.1  Daniel Armbruster
+ * 22/04/2012  V0.1  Daniel Armbruster
  * 
  * ============================================================================
  */
 
-#include <vector>
-#include <string>
-#include <boost/program_options.hpp>
-#include <optimizexx/parameter.h>
- 
-#ifndef _OPTNONLIN_VALIDATOR_H_
-#define _OPTNONLIN_VALIDATOR_H_ 
+#include <sstream>
+#include <iomanip>
+#include "result.h"
 
-namespace opt = optimize;
+/*---------------------------------------------------------------------------*/
+void OptResult::writeHeaderLine(std::ostream& os) const
+{
+    os << std::setw(12) << std::right << "MD misfit"
+      << std::setw(12) << std::right << "RMS misfit" << std::endl;
+}
 
-/*!
- * custom validator for a \a liboptimizexx standard parameter for commandline
- * parsing using
- * <a href="http://www.boost.org/doc/libs/release/libs/program_options/">
- * Boost Program Options</a> library.
- */
-void validate(boost::any& v, const std::vector<std::string>& values,
-              opt::StandardParameter<double>*, int);
+/*---------------------------------------------------------------------------*/
+std::ostream& operator<<(std::ostream& os, OptResult const& result)
+{
+  result.write(os);
+  return os;
+}
 
-#endif // include guard
+/*---------------------------------------------------------------------------*/
+void OptResult::write(std::ostream& os) const
+{
+  std::stringstream ss;
+  ss << std::right << std::setw(12) << MmdMisfit
+    << std::setw(12) << std::right << std::fixed << MrmsMisfit;
 
-/* ----- END OF validator.h  ----- */
+  os << ss.str() << std::endl;
+}
+
+
+/* ----- END OF result.cc  ----- */
