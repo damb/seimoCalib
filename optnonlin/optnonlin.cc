@@ -54,7 +54,6 @@
 #include <optimizexx/globalalgorithms/gridsearch.h>
 #include <optimizexx/standardbuilder.h>
 #include <optimizexx/iterator.h>
-//#include <optimizexx/application.h>
 #include <datrwxx/readany.h>
 #include "types.h"
 #include "visitor.h"
@@ -455,12 +454,18 @@ int main(int iargc, char* argv[])
     cerr << usage_text;
     return 1;
   }
-  catch(std::exception& e)
+  catch (std::exception& e) 
+  {
+    cerr << "ERROR: " << e.what() << "\n";
+    cerr << usage_text;
+    return 1;
+  }
+  catch (...)
   {
     cerr << "ERROR: Exception of unknown type!\n";
     cerr << usage_text;
     return 1;
-  }    
+  }
 
   return 0;
 

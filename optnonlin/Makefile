@@ -32,7 +32,7 @@
 PROGRAMS=optnonlin
 
 .PHONY: all
-all: install doxydoc
+all: install
 
 .PHONY: install
 install: $(addprefix $(LOCBINDIR)/,$(PROGRAMS))
@@ -96,35 +96,5 @@ optnonlin: $(OBJ)
 #======================================================================
 help: optnonlin
 	$< -help 2>&1 | less
-
-#======================================================================
-
-$(call CHECKVARS,TF_WWWBASEDIR TF_BROWSER)
-
-DOXYWWWPATH=$(TF_WWWBASEDIR)/optimize/optnonlin
-
-.PHONY: doxyclean doxyview doxydoc doxyconf
-
-doxyclean: ;/bin/rm -rfv $(DOXYWWWPATH)
-
-DOXYSRC=$(wildcard *.cc *.h README.*)
-
-# create doxygen intermediate configuration
-PWD=$(shell env pwd)
-doxydoc.xxx: doxydoc.cfg
-	sed 's,<OUTPUTDIRECTORY>,$(DOXYWWWPATH),g;s,<STRIPFROMPATH>,$(PWD),g' \
-	  $< > $@
-# create commented version of doxygen configuration
-doxycomm.xxx: doxydoc.cfg
-	/bin/cp -vf $< $@; doxygen -u $@
-
-$(DOXYWWWPATH)/html/index.html: doxydoc.xxx $(DOXYSRC)
-	mkdir -vp $(DOXYWWWPATH)
-	doxygen $<
-
-doxydoc: $(DOXYWWWPATH)/html/index.html
-
-doxyview: $(DOXYWWWPATH)/html/index.html
-	$(TF_BROWSER) file:$< &
 
 # ----- END OF Makefile ----- 
