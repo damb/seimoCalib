@@ -33,16 +33,19 @@
  *                    configuration file is supported.
  * 18/04/2012  V0.3   Dynamic configuration of number of threads started for
  *                    computation.
+ * 25/04/2012  V0.4   Adjust program to handle interface changes of
+ *                    liboptimizexx and libcalexxx.
  * 
  * ============================================================================
  */
  
-#define OPTCALEX_VERSION "V0.3"
-#define OPTCALEX_LICENSE "GPLv2"
+#define OPTCALEX_VERSION "V0.4"
+#define OPTCALEX_LICENSE "GPLv2+"
 
 #include <vector>
 #include <iomanip>
 #include <fstream>
+#include <memory>
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/thread.hpp>
@@ -345,78 +348,69 @@ int main(int iargc, char* argv[])
     {
       std::vector<std::string> sys_params =
         vm["sys-param"].as<std::vector<std::string> >();
-      for (std::vector<std::string>::const_iterator cit(sys_params.begin());
-          cit != sys_params.end(); ++cit)
+      for (auto cit(sys_params.cbegin()); cit != sys_params.cend(); ++cit)
       {
-        calex::SystemParameter* sys_param = 0;
-        calex::parser::systemParameterParser(*cit, &sys_param);
-        calex_config.add_systemParameter(*sys_param);
+        calex_config.add_systemParameter(
+            calex::parser::systemParameterParser(*cit));
       }
     }
 
-    calex::SystemParameter* default_amp_param =
-      new calex::SystemParameter("amp", CALEX_AMP, CALEX_AMPUNC);
-    calex::SystemParameter* default_del_param =
-      new calex::SystemParameter("del", CALEX_DEL, CALEX_DELUNC);
-    calex::SystemParameter* default_sub_param =
-      new calex::SystemParameter("sub", CALEX_SUB, CALEX_SUBUNC);
-    calex::SystemParameter* default_til_param =
-      new calex::SystemParameter("til", CALEX_TIL, CALEX_TILUNC);
     if (vm.count("amp-param"))
     {
-      calex::SystemParameter* amp_param = 0;
-      calex::parser::systemParameterParser(vm["amp-param"].as<std::string>(),
-          &amp_param, "amp");
-      calex_config.set_amp(*amp_param);
-      delete default_amp_param;
+      calex_config.set_amp(
+          calex::parser::systemParameterParser(
+            vm["amp-param"].as<std::string>(),
+            "amp"));
     } else
     {
-      calex_config.set_amp(*default_amp_param);
+      calex_config.set_amp(
+          std::shared_ptr<calex::SystemParameter>(
+            new calex::SystemParameter("amp", CALEX_AMP, CALEX_AMPUNC)));
     }
     if (vm.count("del-param"))
     {
-      calex::SystemParameter* del_param = 0;
-      calex::parser::systemParameterParser(vm["del-param"].as<std::string>(),
-          &del_param, "del");
-      calex_config.set_del(*del_param);
-      delete default_del_param;
+      calex_config.set_del(
+          calex::parser::systemParameterParser(
+            vm["del-param"].as<std::string>(),
+            "del"));
     } else
     {
-      calex_config.set_del(*default_del_param);
+      calex_config.set_del(
+          std::shared_ptr<calex::SystemParameter>(
+            new calex::SystemParameter("del", CALEX_DEL, CALEX_DELUNC)));
     }
     if (vm.count("sub-param"))
     {
-      calex::SystemParameter* sub_param = 0;
-      calex::parser::systemParameterParser(vm["sub-param"].as<std::string>(),
-          &sub_param, "sub");
-      calex_config.set_sub(*sub_param);
-      delete default_sub_param;
+      calex_config.set_sub(
+          calex::parser::systemParameterParser(
+            vm["sub-param"].as<std::string>(),
+            "sub"));
     } else
     {
-      calex_config.set_sub(*default_sub_param);
+      calex_config.set_sub(
+          std::shared_ptr<calex::SystemParameter>(
+            new calex::SystemParameter("sub", CALEX_SUB, CALEX_SUBUNC)));
     }
     if (vm.count("til-param"))
     {
-      calex::SystemParameter* til_param = 0;
-      calex::parser::systemParameterParser(vm["til-param"].as<std::string>(),
-          &til_param, "til");
-      calex_config.set_til(*til_param);
-      delete default_til_param;
+      calex_config.set_til(
+          calex::parser::systemParameterParser(
+            vm["til-param"].as<std::string>(),
+            "til"));
     } else
     {
-      calex_config.set_til(*default_til_param);
+      calex_config.set_sub(
+          std::shared_ptr<calex::SystemParameter>(
+            new calex::SystemParameter("til", CALEX_TIL, CALEX_TILUNC)));
     }
     // fetch first order subsystem commandline arguments
     if (vm.count("first-order"))
     {
       std::vector<std::string> first_order =
         vm["first-order"].as<std::vector<std::string> >();
-      for (std::vector<std::string>::const_iterator cit(first_order.begin());
-          cit != first_order.end(); ++cit)
+      for (auto cit(first_order.cbegin()); cit != first_order.cend(); ++cit)
       {
-        calex::CalexSubsystem* subsys = 0;
-        calex::parser::firstOrderParser(*cit, &subsys);
-        calex_config.add_subsystem(*subsys);
+        calex_config.add_subsystem(calex::parser::firstOrderParser(*cit));
       }
     }
     // fetch second order subsystem commandline arguments
@@ -424,12 +418,9 @@ int main(int iargc, char* argv[])
     {
       std::vector<std::string> second_order =
         vm["second-order"].as<std::vector<std::string> >();
-      for (std::vector<std::string>::const_iterator cit(second_order.begin());
-          cit != second_order.end(); ++cit)
+      for (auto cit(second_order.cbegin()); cit != second_order.cend(); ++cit)
       {
-        calex::CalexSubsystem* subsys = 0;
-        calex::parser::secondOrderParser(*cit, &subsys);
-        calex_config.add_subsystem(*subsys);
+        calex_config.add_subsystem(calex::parser::secondOrderParser(*cit));
       }
     }
     
@@ -464,12 +455,13 @@ int main(int iargc, char* argv[])
       cout << "optcalex: Setting up parameter space ..." << endl;
     }
     // create parameter space builder
-    opt::ParameterSpaceBuilder<TcoordType, TresultType>* builder =
-      new opt::StandardParameterSpaceBuilder<TcoordType, TresultType>;
+    std::unique_ptr<opt::ParameterSpaceBuilder<TcoordType, TresultType>>
+      builder(new opt::StandardParameterSpaceBuilder<TcoordType, TresultType>);
 
     // gridsearch algorithm
-    opt::GlobalAlgorithm<TcoordType, TresultType>* algo = 
-      new opt::GridSearch<TcoordType, TresultType>(builder, numThreads);
+    std::shared_ptr<opt::GlobalAlgorithm<TcoordType, TresultType>> algo( 
+      new opt::GridSearch<TcoordType, TresultType>(
+          std::move(builder), numThreads));
 
     calex_config.set_gridSystemParameters<TcoordType>(*algo);
 
@@ -489,8 +481,8 @@ int main(int iargc, char* argv[])
 
     // collect results and write to outpath
     std::ofstream ofs(outpath.string().c_str());
-    opt::Iterator<TcoordType, TresultType> it = 
-      algo->getParameterSpace().createIterator(opt::ForwardNodeIter);
+    opt::Iterator<TcoordType, TresultType> it(
+      algo->getParameterSpace().createIterator(opt::ForwardNodeIter));
 
     if (vm.count("verbose"))
     {
@@ -503,17 +495,13 @@ int main(int iargc, char* argv[])
     for (it.first(); !it.isDone(); ++it)
     {
       std::vector<TcoordType> const& c = (*it)->getCoordinates();
-      for (std::vector<TcoordType>::const_iterator cit(c.begin());
-          cit != c.end(); ++cit)
+      for (auto cit(c.cbegin()); cit != c.cend(); ++cit)
       {
         ofs << std::setw(12) << std::fixed << std::left << *cit << " ";
       }
       ofs << "    ";
       (*it)->getResultData().writeLine(ofs);
     }
-
-    delete algo;
-    delete builder;
 
     if (vm.count("verbose"))
     {
