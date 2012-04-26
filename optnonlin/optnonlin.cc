@@ -70,23 +70,6 @@ using std::cerr;
 using std::endl;
 
 /* ---------------------------------------------------------------------------*/
-//! overloaded operator< to sort param commandline args
-bool operator<(opt::StandardParameter<TcoordType> const& p1,
-    opt::StandardParameter<TcoordType> const& p2)
-{
-  if (p1.getId() < p2.getId()) { return true; }
-  return false;
-}
-
-/* ---------------------------------------------------------------------------*/
-bool operator==(opt::StandardParameter<TcoordType> const& p1,
-    opt::StandardParameter<TcoordType> const& p2)
-{
-  if (p1.getId() == p2.getId()) { return true; }
-  return false;
-}
-/* ---------------------------------------------------------------------------*/
-
 int main(int iargc, char* argv[])
 {
   // define usage information
@@ -284,8 +267,20 @@ int main(int iargc, char* argv[])
     fs::path calibOutfile(vm["calib-out"].as<fs::path>());
 
     // check and sort unknown parameters
-    std::sort(params.begin(), params.end());
-    std::unique(params.begin(), params.end());
+    // TODO TODO TODO TODO TODO TODO TODO
+    // Checkings necessary
+    std::sort(params.begin(), params.end(),
+        [](opt::StandardParameter<TcoordType> const& p1,
+          opt::StandardParameter<TcoordType> const& p2) -> bool
+        {
+          return p1.getId() > p2.getId();
+        });
+    std::unique(params.begin(), params.end(),
+        [](opt::StandardParameter<TcoordType> const& p1,
+          opt::StandardParameter<TcoordType> const& p2) -> bool
+        {
+          return p1.getId() == p2.getId();
+        });
     if(vm.count("linear"))
     {
       if (params.size() != 3 || params.at(0).getId() != "a0" ||
@@ -303,12 +298,13 @@ int main(int iargc, char* argv[])
       }
     }
 
-    // save addresses of unknown parameters
-    std::vector<opt::StandardParameter<TcoordType> const*> param_adds;
-    param_adds.reserve(5);
+    // create shared_ptrs for unknown parameters
+    std::vector<std::shared_ptr<opt::StandardParameter<TcoordType>>> param_ptrs;
+    param_ptrs.reserve(5);
     for (auto it(params.begin()); it != params.end(); ++it)
     {
-      param_adds.push_back(&(*it));
+      param_ptrs.push_back(std::shared_ptr<opt::StandardParameter<TcoordType>>(
+            new opt::StandardParameter<TcoordType>(*it)));
     }
 
     // read data files
@@ -373,14 +369,11 @@ int main(int iargc, char* argv[])
       cout << "optnonlin: Setting up parameter space ..." << endl;
     }
     // create parameter space builder
-    opt::ParameterSpaceBuilder<TcoordType, TresultType>* builder =
-      new opt::StandardParameterSpaceBuilder<TcoordType, TresultType>;
+    std::unique_ptr<opt::ParameterSpaceBuilder<TcoordType, TresultType>>
+      builder(new opt::StandardParameterSpaceBuilder<TcoordType, TresultType>);
 
-    // gridsearch algorithm
-    opt::GlobalAlgorithm<TcoordType, TresultType>* algo = 
-      new opt::GridSearch<TcoordType, TresultType>(builder, numThreads);
-
-    // get parameter order of the builder and reorder parameters
+    // get parameter order of the builder and reorder parameters after creating
+    // global algorithm
     std::vector<int> order;
     if (vm.count("linear"))
     {
@@ -389,9 +382,15 @@ int main(int iargc, char* argv[])
     {
       order = builder->getParameterOrder(5);
     }
+
+    // gridsearch algorithm
+    std::unique_ptr<opt::GlobalAlgorithm<TcoordType, TresultType>> algo( 
+      new opt::GridSearch<TcoordType, TresultType>(
+        std::move(builder), numThreads));
+
     for (auto cit(order.cbegin()); cit != order.end(); ++cit)
     {
-      algo->addParameter(param_adds[*cit]);
+      algo->addParameter(param_ptrs[*cit]);
     }
 
     opt::ParameterSpaceVisitor<TcoordType, TresultType>* app = 0;
@@ -446,9 +445,7 @@ int main(int iargc, char* argv[])
     }
 
     // clean up
-    delete algo;
     delete app;
-    delete builder;
     delete dif2Series; delete difSeries; delete squareSeries; delete cubeSeries;
 
   }

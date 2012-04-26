@@ -40,20 +40,28 @@
 #include <string>
 #include <boost/program_options.hpp>
 #include <optimizexx/parameter.h>
+#include "types.h"
  
 #ifndef _OPTNONLIN_VALIDATOR_H_
 #define _OPTNONLIN_VALIDATOR_H_ 
 
 namespace opt = optimize;
 
-/*!
- * custom validator for a \a liboptimizexx standard parameter for commandline
- * parsing using
- * <a href="http://www.boost.org/doc/libs/release/libs/program_options/">
- * Boost Program Options</a> library.
+/* Put the custom validator for boost program_options into the same namespace
+ * the class is available to parse it on a commandline.
+ * see: http://www.c-plusplus.de/forum/252716
  */
-void validate(boost::any& v, const std::vector<std::string>& values,
-              opt::StandardParameter<double>*, int);
+namespace optimize
+{
+  /*!
+   * custom validator for a \a liboptimizexx standard parameter for commandline
+   * parsing using
+   * <a href="http://www.boost.org/doc/libs/release/libs/program_options/">
+   * Boost Program Options</a> library.
+   */
+  void validate(boost::any& v, const std::vector<std::string>& values,
+                StandardParameter<TcoordType>*, int);
+}
 
 #endif // include guard
 

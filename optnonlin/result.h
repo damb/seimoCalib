@@ -43,6 +43,8 @@ class OptResult
 {
   public:
     //! constructor
+    OptResult() : MmdMisfit(0), MrmsMisfit(0) { }
+    //! constructor
     OptResult(double md_misfit, double rms_misfit) : MmdMisfit(md_misfit),
       MrmsMisfit(rms_misfit)
     { }

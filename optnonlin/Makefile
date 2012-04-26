@@ -72,7 +72,7 @@ edit: flist; vim $<
 clean: ; 
 	-find . -name \*.bak | xargs --no-run-if-empty /bin/rm -v
 	-/bin/rm -vf flist
-	-/bin/rm *.o *.bak *.d
+	-/bin/rm -vf *.o *.bak *.d
 
 #======================================================================
 # dependencies

@@ -34,6 +34,7 @@
  * ============================================================================
  */
 
+#include <string>
 #include <cmath>
 #include "util.h"
 
@@ -51,14 +52,14 @@ namespace util
 
     if (0 == time_constant) { time_constant = 1.; }
     double denominator = 2.*dt / time_constant;
-    size_t j;
+    int j;
     for (j=series.f()+1; j<series.l(); ++j)
     {
-      result_series[j] = (series[j+1]-series[j-1]) / denominator;
+      result_series(j) = (series(j+1)-series(j-1)) / denominator;
     }
-    result_series[0] = result_series[1];
+    result_series(0) = result_series(1);
     ++j;
-    result_series[j] = result_series[j-1];
+    result_series(j) = result_series(j-1);
   } // function dif
 
   /* ----------------------------------------------------------------------- */
@@ -72,14 +73,14 @@ namespace util
 
     if (0 == time_constant) { time_constant = 1.; }
     double denominator = pow(dt,2.) / time_constant;
-    size_t j;
+    int j;
     for (j=series.f()+1; j<series.l(); ++j)
     {
-      result_series[j] = (series[j+1]-2*series[j]+series[j-1]) / denominator;
+      result_series(j) = (series(j+1)-2*series(j)+series(j-1)) / denominator;
     }
-    result_series[0] = result_series[1];
+    result_series(0) = result_series(1);
     ++j;
-    result_series[j] = result_series[j-1];
+    result_series(j) = result_series(j-1);
   } // function dif2
 
   /* ----------------------------------------------------------------------- */
@@ -89,9 +90,9 @@ namespace util
     {
       throw std::string("Inconsistant series size.");
     }
-    for (size_t j=series.f(); j<=series.l(); ++j)
+    for (int j=series.f(); j<=series.l(); ++j)
     {
-      result_series[j] = pow(series[j], 2.);
+      result_series(j) = pow(series(j), 2.);
     }
   } // function square
 
@@ -102,9 +103,9 @@ namespace util
     {
       throw std::string("Inconsistant series size.");
     }
-    for (size_t j=series.f(); j<=series.l(); ++j)
+    for (int j=series.f(); j<=series.l(); ++j)
     {
-      result_series[j] = pow(series[j], 3.);
+      result_series(j) = pow(series(j), 3.);
     }
   } // function cube
   
@@ -116,9 +117,9 @@ namespace util
     {
       throw std::string("Inconsistant series size.");
     }
-    for (size_t j=series.f(); j<=series.l(); ++j)
+    for (int j=series.f(); j<=series.l(); ++j)
     {
-      result_series[j] = fac*series[j];
+      result_series(j) = fac*series(j);
     }
   } // function multiply
 
