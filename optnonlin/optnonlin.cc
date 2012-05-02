@@ -81,7 +81,7 @@ int main(int iargc, char* argv[])
     " Author: Daniel Armbruster" "\n"
     "  Usage: optnonlin [-v|--verbose] [-o|--overwrite] [-t|--threads]" "\n"
     "                   [--config-file arg] [--linear] [--iformat arg]" "\n"
-    "                   -p|--param arg -p|--param arg -p|--param arg" "\n"
+    "                   -p|--param arg -p|--param arg" "\n"
     "                   [-p|--param arg -p|--param arg]" "\n"
     "                   --calib-in arg --calib-out arg OUTFILE" "\n"
     "     or: optnonlin -V|--version" "\n"
@@ -91,7 +91,6 @@ int main(int iargc, char* argv[])
 
   // define notes text to provide additional information on commandline
   // arguments
-
   char notes_text[]=
   {
     "\n-----------------------\n"
