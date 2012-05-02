@@ -29,11 +29,13 @@
  * Copyright (c) 2012 by Daniel Armbruster
  * 
  * REVISIONS and CHANGES 
- * 19/04/2012  V0.1  Daniel Armbruster
+ * 19/04/2012   V0.1    Daniel Armbruster
+ * 02/05/2012   V0.1.1  Corrections and adjustments of seismometer models.
  * 
  * ============================================================================
  */
  
+#include <cmath>
 #include <optimizexx/application.h>
 #include <optimizexx/node.h>
 #include <datrwxx/types.h>
@@ -56,7 +58,7 @@ class LinApplication :
         datrw::Tdseries const& y_dif2, datrw::Tdseries const& y_dif,
         datrw::Tdseries const& y, bool verbose=false) :
       McalibInSeries(calib_in_series), MyDif2(y_dif2), MyDif(y_dif), My(y),
-      Mverbose(verbose)
+      Mpi(4.*atan(1.)), Mverbose(verbose)
     { 
       if (McalibInSeries.size() != MyDif2.size() || 
           McalibInSeries.size() != MyDif.size() ||
@@ -98,6 +100,8 @@ class LinApplication :
     datrw::Tdseries const& MyDif;
     //! output time series of the seismometer
     datrw::Tdseries const& My;
+    // pi constant
+    double const Mpi;
     //! verbosity flag
     bool Mverbose;
 }; // class LinApplication
@@ -117,7 +121,7 @@ class NonLinApplication :
         datrw::Tdseries const& y, datrw::Tdseries const& y_square,
         datrw::Tdseries const& y_cube, bool verbose=false) :
       McalibInSeries(calib_in_series), MyDif2(y_dif2), MyDif(y_dif), My(y),
-      MySquare(y_square), MyCube(y_cube), Mverbose(verbose)
+      MySquare(y_square), MyCube(y_cube), Mpi(4.*atan(1.)), Mverbose(verbose)
     { 
       if (McalibInSeries.size() != MyDif2.size() || 
           McalibInSeries.size() != MyDif.size() ||
@@ -165,6 +169,8 @@ class NonLinApplication :
     datrw::Tdseries const& MySquare;
     //! cube of the output time series of the seismometer
     datrw::Tdseries const& MyCube;
+    // pi constant
+    double const Mpi;
     //! verbosity flag
     bool Mverbose;
 

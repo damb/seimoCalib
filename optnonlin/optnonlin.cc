@@ -36,12 +36,13 @@
  * Copyright (c) 2012 by Daniel Armbruster
  * 
  * REVISIONS and CHANGES 
- * 19/04/2012  V0.1  Daniel Armbruster
+ * 19/04/2012   V0.1      Daniel Armbruster
+ * 02/05/2012   V0.1.1    Corrections of help text and seismometer models.
  * 
  * ============================================================================
  */
  
-#define OPTNONLIN_VERSION "V0.1"
+#define OPTNONLIN_VERSION "V0.1.1"
 #define OPTNONLIN_LICENSE "GPLv2"
 
 #include <vector>
@@ -97,23 +98,27 @@ int main(int iargc, char* argv[])
     "Nonlinear system model:" "\n"
     "Parameter search for a nonlinear system is based on the following" "\n"
     "model:" "\n"
-    "   a_0*y''+a_1*y'+a_2*y+a_3*y^2+a_4*y^3 = u''" "\n"
-    "where a_0, a_1, a_2, a_3 and a_4 are the unknown parameters, y is the" "\n"
-    "output time series of the seismometer and u'' is the acceleration" "\n"
-    "which is proportional to the calibration force affecting the seismic" "\n"
-    "mass." "\n"
+    "   y''+2*((2*pi)/T0)*h*y'+((4*pi^2)/T0)*y+c0*y^2+c1*y^3 = a''" "\n"
+    "where T0 is the eigenperiod of the seismometer (unknown parameter), h\n"
+    "is the damping of the seismometer (unknown parameter) and c0 and c1\n"
+    "are constants for nonlinear terms in the seismometer differential" "\n"
+    "equation. y is the output time series of the seismometer and a'' is" "\n"
+    "the acceleration which is proportional to the calibration force" "\n"
+    "affecting the seismic mass." "\n"
     "\n--------------------\n"
     "Linear system model:" "\n"
     "If using the '--linear' option optnonlin will perform a search based" "\n"
     "on the linear model equation for a seismometer:" "\n"
-    "   a_0*y''+a_1*y'+a_2*y = u''" "\n"
-    "where a_0, a_1 and a_2 are the unknown parameters, y is the output" "\n"
-    "time series of the seismometer and u'' is the acceleration which is" "\n"
-    "proportional to the calibration force affecting the seismic mass." "\n"
+    "   y''+2*((2*pi)/T0)*h*y'+((4*pi^2)/T0)*y = a''" "\n"
+    "where T0 is the eigenperiod of the seismometer (unknown parameter), h\n"
+    "is the damping of the seismometer (unknown parameter), y is the" "\n"
+    "output time series of the seismometer and a'' is the acceleration" "\n"
+    "which is proportional to the calibration force affecting the seismic" "\n"
+    "mass." "\n"
     "Note that if the option '--linear' is specified the commandline" "\n"
     "arguments for the unknown parameters" "\n"
-    "'-p|--param a3 start end delta' and" "\n"
-    "'-p|--param a4 start end delta' will be ignored if passed." "\n"
+    "'-p|--param c0 start end delta' and" "\n"
+    "'-p|--param c1 start end delta' will be ignored if passed." "\n"
     "\n-------------------------------------------------------\n"
     "Additional notes on optnonlin unknown parameter syntax:\n"
     "To perform a parameter search with optnonlin search ranges for the" "\n"
@@ -122,11 +127,11 @@ int main(int iargc, char* argv[])
     "-p|--param id start end delta" "\n"
     "where" "\n"
     "   id      id of the unknown parameter" "\n"
-    "           (either 'a0' or 'a1' or 'a2' or 'a3' or 'a4')" "\n"
+    "           (either 'T0' or 'h' or 'c1' or 'c2')" "\n"
     "   start   start of the search range" "\n"
     "   end     end of the search range" "\n"
     "   delta   stepwidth in search range" "\n\n"
-    "Note if two parameters with the same id were specified the last one" "\n"
+    "Note if two parameters with the same id were specified the first one" "\n"
     "will be taken." "\n"
   };
 
@@ -266,8 +271,6 @@ int main(int iargc, char* argv[])
     fs::path calibOutfile(vm["calib-out"].as<fs::path>());
 
     // check and sort unknown parameters
-    // TODO TODO TODO TODO TODO TODO TODO
-    // Checkings necessary
     std::sort(params.begin(), params.end(),
         [](opt::StandardParameter<TcoordType> const& p1,
           opt::StandardParameter<TcoordType> const& p2) -> bool
@@ -282,19 +285,27 @@ int main(int iargc, char* argv[])
         });
     if(vm.count("linear"))
     {
-      if (params.size() != 3 || params.at(0).getId() != "a0" ||
-          params.at(1).getId() != "a1" || params.at(2).getId() != "a2" )
+      // now unknown parameters should be in the following order (linear)
+      // h  -> params.at(0)
+      // T0 -> params.at(1)
+      if (params.size() < 2 || params.at(0).getId() != "h" ||
+          params.at(1).getId() != "T0")
       {
         throw std::string("Illegal parameter specification.");
       }
     } else
     {
-      if (params.size() != 5 || params.at(0).getId() != "a0" ||
-          params.at(1).getId() != "a1" || params.at(2).getId() != "a2" ||
-          params.at(3).getId() != "a3" || params.at(4).getId() != "a4")
+      if (params.size() != 4 || params.at(0).getId() != "c0" ||
+          params.at(1).getId() != "c1" || params.at(2).getId() != "h" ||
+          params.at(3).getId() != "T0")
       {
         throw std::string("Illegal parameter specification.");
       }
+      // now unknown parameters should be in the following order (nonlinear)
+      // c0 -> params.at(0)
+      // c1 -> params.at(1)
+      // h  -> params.at(2)
+      // T0 -> params.at(3)
     }
 
     // create shared_ptrs for unknown parameters
@@ -387,6 +398,10 @@ int main(int iargc, char* argv[])
       new opt::GridSearch<TcoordType, TresultType>(
         std::move(builder), numThreads));
 
+    // TODO TODO TODO TODO TODO
+    // IMPORTANT: check once again the order of the parameters
+    // TODO TODO TODO TODO TODO
+    // add reordered parameters
     for (auto cit(order.cbegin()); cit != order.end(); ++cit)
     {
       algo->addParameter(param_ptrs[*cit]);

@@ -39,7 +39,6 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
-#include <cmath>
 #include "visitor.h"
 #include "util.h"
 #include "result.h"
@@ -49,23 +48,23 @@
 void LinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
 {
   std::vector<TcoordType> const& coordinates = node->getCoordinates();
-
   
-  datrw::Tdseries a0TimesMyDif2(McalibInSeries.size());
-  datrw::Tdseries a1TimesMyDif(McalibInSeries.size());
-  datrw::Tdseries a2TimesMy(McalibInSeries.size());
+  datrw::Tdseries factorTimesMyDif(McalibInSeries.size());
+  datrw::Tdseries factorTimesMy(McalibInSeries.size());
 
-  // multiply series with coordinate factor
-  util::multiply(MyDif2, a0TimesMyDif2, coordinates[0]);
-  util::multiply(MyDif, a1TimesMyDif, coordinates[1]);
-  util::multiply(My, a2TimesMy, coordinates[2]);
+  // h  -> coordinates[0]
+  // T0 -> coordinates[1]
+  // multiply series with appropriate factor
+  util::multiply(MyDif, factorTimesMyDif,
+      ((2*Mpi)/coordinates[1])*coordinates[0]);
+  util::multiply(My, factorTimesMy, (4.*pow(Mpi, 2.))/coordinates[1]);
 
   datrw::Tdseries differenceSeries(McalibInSeries.size()); 
   // compute difference of series
-  for (int j=a0TimesMyDif2.f(); j<=a0TimesMyDif2.l(); ++j)
+  for (int j=MyDif2.f(); j<=MyDif2.l(); ++j)
   {
-    differenceSeries(j) = fabs(a0TimesMyDif2(j) + a1TimesMyDif(j) +
-          a2TimesMy(j) - McalibInSeries(j));
+    differenceSeries(j) = fabs(MyDif2(j) + factorTimesMyDif(j) +
+          factorTimesMy(j) - McalibInSeries(j));
   }
   // compute square of difference of series
   double md_numerator = 0;
@@ -90,8 +89,7 @@ void LinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
     // without loop cause if using multiple threads to avoid mixing output up
     std::cout << "Parameter configuration: "
       << std::setw(12) << std::fixed << std::right << coordinates[0] << " "
-      << std::setw(12) << std::fixed << std::right << coordinates[1] << " "
-      << std::setw(12) << std::fixed << std::right << coordinates[2]
+      << std::setw(12) << std::fixed << std::right << coordinates[1]
       << "\nResult: " << result << std::endl;
   }
 } // function LinApplication::operator()
@@ -102,25 +100,28 @@ void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
   std::vector<TcoordType> const& coordinates = node->getCoordinates();
 
   
-  datrw::Tdseries a0TimesMyDif2(McalibInSeries.size());
-  datrw::Tdseries a1TimesMyDif(McalibInSeries.size());
-  datrw::Tdseries a2TimesMy(McalibInSeries.size());
-  datrw::Tdseries a3TimesMySquare(McalibInSeries.size());
-  datrw::Tdseries a4TimesMyCube(McalibInSeries.size());
+  datrw::Tdseries factorTimesMyDif(McalibInSeries.size());
+  datrw::Tdseries factorTimesMy(McalibInSeries.size());
+  datrw::Tdseries c0TimesMySquare(McalibInSeries.size());
+  datrw::Tdseries c1TimesMyCube(McalibInSeries.size());
 
-  // multiply series with coordinate factor
-  util::multiply(MyDif2, a0TimesMyDif2, coordinates[0]);
-  util::multiply(MyDif, a1TimesMyDif, coordinates[1]);
-  util::multiply(My, a2TimesMy, coordinates[2]);
-  util::multiply(MySquare, a3TimesMySquare, coordinates[3]);
-  util::multiply(MyCube, a4TimesMyCube, coordinates[4]);
+  // multiply series with approriate coordinate factor
+  // c0 -> coordinates[0]
+  // c1 -> coordinates[1]
+  // h  -> coordinates[2]
+  // T0 -> coordinates[3]
+  util::multiply(MyDif, factorTimesMyDif,
+      ((2*Mpi)/coordinates[3])*coordinates[2]);
+  util::multiply(My, factorTimesMy, (4.*pow(Mpi, 2.))/coordinates[3]);
+  util::multiply(MySquare, c0TimesMySquare, coordinates[0]);
+  util::multiply(MyCube, c1TimesMyCube, coordinates[1]);
 
   datrw::Tdseries differenceSeries(McalibInSeries.size()); 
   // compute difference of series
-  for (int j=a0TimesMyDif2.f(); j<=a0TimesMyDif2.l(); ++j)
+  for (int j=MyDif2.f(); j<=MyDif2.l(); ++j)
   {
-    differenceSeries(j) = fabs(a0TimesMyDif2(j) + a1TimesMyDif(j) +
-          a2TimesMy(j) + a3TimesMySquare(j) + a4TimesMyCube(j) -
+    differenceSeries(j) = fabs(MyDif2(j) + factorTimesMyDif(j) +
+          factorTimesMy(j) + c0TimesMySquare(j) + c1TimesMyCube(j) -
           McalibInSeries(j));
   }
   // compute square of difference of series
@@ -148,8 +149,7 @@ void NonLinApplication::operator()(opt::Node<TcoordType, TresultType>* node)
       << std::setw(12) << std::fixed << std::right << coordinates[0] << " "
       << std::setw(12) << std::fixed << std::right << coordinates[1] << " "
       << std::setw(12) << std::fixed << std::right << coordinates[2] << " "
-      << std::setw(12) << std::fixed << std::right << coordinates[3] << " "
-      << std::setw(12) << std::fixed << std::right << coordinates[4]
+      << std::setw(12) << std::fixed << std::right << coordinates[3]
       << "\nResult: " << result << std::endl;
   }
 } // function NonLinApplication::operator()

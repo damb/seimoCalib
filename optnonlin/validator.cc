@@ -74,8 +74,7 @@ namespace optimize
     }
 
     const std::string id = values.at(0);
-    if (("a0" != id) && ("a1" != id) && ("a2" != id) && ("a3" != id) &&
-        ("a4" != id))
+    if (("c0" != id) && ("c1" != id) && ("T0" != id) && ("h" != id))
     {
       throw po::validation_error(po::validation_error::invalid_option_value);
     }
