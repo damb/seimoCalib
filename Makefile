@@ -25,7 +25,7 @@
 # ----------------------------------------------------------------------------
 #
 
-PROGRAMS=optcalex
+PROGRAMS=optcalex optnonlin
 
 .PHONY: all
 all: install doc
@@ -51,6 +51,7 @@ clean:
 	-/bin/rm *.o *.bak *.o77 *.exe flist *.ps $(PROGRAMS) *.xxx *.d
 	-find . -name \*.bak | xargs --no-run-if-empty /bin/rm -v
 	-find . -name \*.d | xargs --no-run-if-empty /bin/rm -v
+	-find . -name \*.o | xargs --no-run-if-empty /bin/rm -v
 
 # =============================================================================
 #
@@ -81,7 +82,7 @@ CPPFLAGS+=$(addprefix -I,$(LOCINCLUDEDIR)) $(FLAGS)
         > $@; \
       [ -s $@ ] || rm -f $@'
 
-SRCFILES=$(wildcard *.cc)
+SRCFILES=$(wildcard *.cc) $(wildcard optnonlinxx/*.cc)
 -include $(patsubst %.cc,%.d,$(SRCFILES))
 
 #------------------------------------------------------------------------------
@@ -91,8 +92,10 @@ optcalex: %: %.o
 		-lboost_filesystem -lboost_program_options -lboost_thread -std=c++0x \
 		-L$(LOCLIBDIR) $(CXXFLAGS) $(FLAGS) $(LDFLAGS)
 
-optnonlin:
-	$(Make) -C optnonlin optnonlin
+optnonlin: %: %.o $(patsubst %.cc,%.o,$(wildcard optnonlinxx/*.cc))
+	$(CXX) -o $@ $^ -ldatrwxx -lsffxx -lgsexx -ltime++ -laff -loptimizexx \
+  	-lboost_filesystem -lboost_program_options -lboost_thread -std=c++0x \
+		$(LDFLAGS) $(CXXFLAGS) $(FLAGS)
 
 # ============================================================================
 # documentation

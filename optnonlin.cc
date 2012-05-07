@@ -56,10 +56,10 @@
 #include <optimizexx/standardbuilder.h>
 #include <optimizexx/iterator.h>
 #include <datrwxx/readany.h>
-#include "types.h"
-#include "visitor.h"
-#include "validator.h"
-#include "util.h"
+#include "optnonlinxx/types.h"
+#include "optnonlinxx/visitor.h"
+#include "optnonlinxx/validator.h"
+#include "optnonlinxx/util.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -81,7 +81,7 @@ int main(int iargc, char* argv[])
     " Author: Daniel Armbruster" "\n"
     "  Usage: optnonlin [-v|--verbose] [-o|--overwrite] [-t|--threads]" "\n"
     "                   [--config-file arg] [--linear] [--iformat arg]" "\n"
-    "                   -p|--param arg -p|--param arg" "\n"
+    "                   -p|--param arg -p|--param arg -p|--param arg" "\n"
     "                   [-p|--param arg -p|--param arg]" "\n"
     "                   --calib-in arg --calib-out arg OUTFILE" "\n"
     "     or: optnonlin -V|--version" "\n"
@@ -91,6 +91,7 @@ int main(int iargc, char* argv[])
 
   // define notes text to provide additional information on commandline
   // arguments
+
   char notes_text[]=
   {
     "\n-----------------------\n"
