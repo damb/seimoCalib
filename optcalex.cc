@@ -35,11 +35,12 @@
  *                    computation.
  * 25/04/2012  V0.4   Adjust program to handle interface changes of
  *                    liboptimizexx and libcalexxx.
+ * 10/05/2012  V0.4.1 Bug fixed. System parameters were set correctly now.
  * 
  * ============================================================================
  */
  
-#define OPTCALEX_VERSION "V0.4"
+#define OPTCALEX_VERSION "V0.4.1"
 #define OPTCALEX_LICENSE "GPLv2+"
 
 #include <vector>
@@ -399,7 +400,7 @@ int main(int iargc, char* argv[])
             "til"));
     } else
     {
-      calex_config.set_sub(
+      calex_config.set_til(
           std::shared_ptr<calex::SystemParameter>(
             new calex::SystemParameter("til", CALEX_TIL, CALEX_TILUNC)));
     }
