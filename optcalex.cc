@@ -164,6 +164,30 @@ int main(int iargc, char* argv[])
     "-------------------------------------------------------------\n"
     "| NOTICE: Separators must be passed exactly as shown above. |\n"
     "-------------------------------------------------------------\n"
+
+    "\n=====================================================================\n"
+    "optcalex will write the results computed to OUTFILE. The first line of\n"
+    "the file is a header line to simplify the identification of the columns\n"
+    "holding the data." "\n"
+    "The left hand side columns are the columns holding the parameter space\n"
+    "coordinates (which actually are the search parameters) followed by" "\n"
+    "the result data columns." "\n"
+    "An examplary result data file written by optcalex looks as follows:" "\n"
+    "\n"
+    "per          dmp               iter         RMS         amp         del\n"
+    "19.600000    0.680000             7    0.013982   -1.480059   -0.057004\n"
+    "20.000000    0.680000             7    0.013982   -1.480059   -0.057004\n"
+    "[...]" "\n\n"
+    "Description:" "\n"
+    "In the example above the parameter searched for had been the period and\n"
+    "the damping of a second order bandpass system (described by the\n"
+    "parameters period (per) and damping (dmp)). The results were computed\n"
+    "by optcalex's forward algorithm which is nothing else than Erhard" "\n"
+    "Wielandt's calex program (http://www.software-for-seismometry.de/)." "\n"
+    "calex then adjusted the amplitude (amp) and the delay (del) and" "\n"
+    "computed a normalized root mean square (RMS) after the number of" "\n"
+    "iterations specified by the 'iter' column." "\n"
+
   };
 
   try
