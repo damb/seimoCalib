@@ -36,11 +36,12 @@
  * 25/04/2012  V0.4   Adjust program to handle interface changes of
  *                    liboptimizexx and libcalexxx.
  * 10/05/2012  V0.4.1 Bug fixed. System parameters were set correctly now.
+ * 15/05/2012  V0.5   Write header information to result data files.
  * 
  * ============================================================================
  */
  
-#define OPTCALEX_VERSION "V0.4.1"
+#define OPTCALEX_VERSION "V0.5"
 #define OPTCALEX_LICENSE "GPLv2+"
 
 #include <vector>
@@ -481,10 +482,6 @@ int main(int iargc, char* argv[])
     algo->execute(app);
 
     // collect results and write to outpath
-    std::ofstream ofs(outpath.string().c_str());
-    opt::Iterator<TcoordType, TresultType> it(
-      algo->getParameterSpace().createIterator(opt::ForwardNodeIter));
-
     if (vm.count("verbose"))
     {
       cout << "optcalex: Collecting results from parameter space grid ..."
@@ -493,15 +490,36 @@ int main(int iargc, char* argv[])
         << endl;
     }
 
-    for (it.first(); !it.isDone(); ++it)
+    std::ofstream ofs(outpath.string().c_str());
+    // write header information
+    // write header information for parameter space parameters
+    std::vector<std::string> param_names(
+        calex_config.get_gridSystemParameterNames<TcoordType>(*algo));
+    for (auto cit(param_names.cbegin()); cit != param_names.cend(); ++cit)
     {
+      ofs << std::setw(12) << std::fixed << std::left << *cit << " ";
+    }
+    ofs << "    ";
+    // write header information of result data
+    opt::Iterator<TcoordType, TresultType> it(
+      algo->getParameterSpace().createIterator(opt::ForwardNodeIter));
+    it.first();
+    (*it)->getResultData().writeHeaderInfo(ofs);
+
+    // write data
+    while (!it.isDone())
+    {
+      // write search parameter
       std::vector<TcoordType> const& c = (*it)->getCoordinates();
       for (auto cit(c.cbegin()); cit != c.cend(); ++cit)
       {
         ofs << std::setw(12) << std::fixed << std::left << *cit << " ";
       }
       ofs << "    ";
+      // write result data
       (*it)->getResultData().writeLine(ofs);
+
+      ++it;
     }
 
     if (vm.count("verbose"))
