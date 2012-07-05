@@ -37,6 +37,8 @@
  *                    liboptimizexx and libcalexxx.
  * 10/05/2012  V0.4.1 Bug fixed. System parameters were set correctly now.
  * 15/05/2012  V0.5   Write header information to result data files.
+ * 05/07/2012  V0.5.1 Check if there are search parameters for calex
+ *                    application. If not set maxit to 0.
  * 
  * ============================================================================
  */
@@ -468,9 +470,21 @@ int main(int iargc, char* argv[])
     calex_config.set_finac(vm["finac"].as<double>());
     calex_config.set_maxit(vm["maxit"].as<int>());
 
+    // checks
     if (! calex_config.hasGridSystemParameters())
     {
       throw std::string("No grid system parameters specified.");
+    }
+
+    if (0 == calex_config.get_numActiveParameters() &&
+       0 != calex_config.get_maxit())
+    {
+      if (vm.count("verbose"))
+      {
+        cout << "optcalex: No active parameters for inversion defined." << endl
+          << "optcalex: Set 'maxit' parameter to 0." << endl;
+      }
+      calex_config.set_maxit(0);
     }
 
     /* --------------------------------------------------------------------- */
