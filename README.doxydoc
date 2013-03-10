@@ -3,7 +3,7 @@
  *
  * ----------------------------------------------------------------------------
  *
- * $Id$
+ * $Id: $
  * 
  * Copyright (c) 2012 by Daniel Armbruster (Black Forest observatory - BFO)
  * 
@@ -27,7 +27,7 @@
 \since March 2012
 \date March 2012
 \version V0.1.1
-$Id$
+$Id: $
 
 \todo Use the configuration file parser which comes along with
 boost::program_options so that optcalex will be configurable using a

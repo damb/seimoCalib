@@ -22,6 +22,7 @@
 # 
 # REVISIONS and CHANGES
 # 19/03/2012	V0.1	Daniel Armbruster
+#
 # ----------------------------------------------------------------------------
 #
 
@@ -31,10 +32,10 @@ PROGRAMS=optcalex optnonlin
 all: install doc
 
 .PHONY: install
-install: $(addprefix $(LOCBINDIR)/,$(PROGRAMS))
-$(LOCBINDIR)/%: %
-	mkdir -pv $(LOCBINDIR)
-	/bin/mv -fv $< $(LOCBINDIR)
+install: $(addprefix $(LOCALBINDIR)/,$(PROGRAMS))
+$(LOCALBINDIR)/%: %
+	mkdir -pv $(LOCALBINDIR)
+	/bin/mv -fv $< $(LOCALBINDIR)
 
 .PHONY: doc
 doc: doxydoc
@@ -58,17 +59,17 @@ clean:
 CHECKVAR=$(if $($(1)),,$(error ERROR: missing variable $(1)))
 CHECKVARS=$(foreach var,$(1),$(call CHECKVAR,$(var)))
 #
-$(call CHECKVARS,LOCINCLUDEDIR LOCLIBDIR LOCBINDIR)
+$(call CHECKVARS,LOCALINCLUDEDIR LOCALLIBDIR LOCALBINDIR)
 $(call CHECKVARS, BOOST_FILESYSTEM_VERSION)
-$(call CHECKVARS,TF_BROWSER TF_WWWBASEDIR)
+$(call CHECKVARS,BROWSER DOCWWWBASEDIR)
 
 FLAGS= -DBOOST_FILESYSTEM_VERSION=$(BOOST_FILESYSTEM_VERSION)
 FLAGS += $(MYFLAGS) -std=c++0x
 CFLAGS += -march=native -O2 -fno-reorder-blocks -fno-reorder-functions -pipe
 
 CXXFLAGS += -Wall $(FLAGS)
-LDFLAGS+=$(addprefix -L,$(LOCLIBDIR))
-CPPFLAGS+=$(addprefix -I,$(LOCINCLUDEDIR)) $(FLAGS)
+LDFLAGS+=$(addprefix -L,$(LOCALLIBDIR))
+CPPFLAGS+=$(addprefix -I,$(LOCALINCLUDEDIR)) $(FLAGS)
 
 #=============================================================================
 # dependencies
@@ -88,9 +89,9 @@ SRCFILES=$(wildcard *.cc) $(wildcard optnonlinxx/*.cc)
 #------------------------------------------------------------------------------
 
 optcalex: %: %.o
-	$(CXX) -o $@ $^ -I$(LOCINCLUDEDIR) -loptimizexx -lcalexxx \
+	$(CXX) -o $@ $^ -I$(LOCALINCLUDEDIR) -loptimizexx -lcalexxx \
 		-lboost_filesystem -lboost_program_options -lboost_thread -std=c++0x \
-		-L$(LOCLIBDIR) $(CXXFLAGS) $(FLAGS) $(LDFLAGS)
+		-L$(LOCALLIBDIR) $(CXXFLAGS) $(FLAGS) $(LDFLAGS)
 
 optnonlin: %: %.o $(patsubst %.cc,%.o,$(wildcard optnonlinxx/*.cc))
 	$(CXX) -o $@ $^ -ldatrwxx -lsffxx -lgsexx -ltime++ -laff -loptimizexx \
@@ -113,9 +114,9 @@ optnonlin: %: %.o $(patsubst %.cc,%.o,$(wildcard optnonlinxx/*.cc))
 # directory.
 #
 
-$(call CHECKVARS,TF_WWWBASEDIR TF_BROWSER)
+$(call CHECKVARS,DOCWWWBASEDIR BROWSER)
 
-DOXYWWWPATH=$(TF_WWWBASEDIR)/optimize
+DOXYWWWPATH=$(DOCWWWBASEDIR)/optimize
 
 .PHONY: doxyclean doxyview doxydoc doxyconf
 
@@ -139,6 +140,6 @@ $(DOXYWWWPATH)/html/index.html: doxydoc.xxx $(DOXYSRC)
 doxydoc: $(DOXYWWWPATH)/html/index.html
 
 doxyview: $(DOXYWWWPATH)/html/index.html
-	$(TF_BROWSER) file:$< &
+	$(BROWSER) file:$< &
 
 # ----- END OF Makefile -----
