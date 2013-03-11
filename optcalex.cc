@@ -351,7 +351,7 @@ int main(int iargc, char* argv[])
     fs::path calibOutfile(vm["calib-out"].as<fs::path>());
     // check if path is in working directory
     if (! fs::exists(fs::current_path() /= calibInfile) ||
-      ! fs::exists(fs::current_path() /= calibInfile)) 
+      ! fs::exists(fs::current_path() /= calibOutfile)) 
     {
       throw std::string(
           "Only execute optcalex in directory where datafiles are located.");
