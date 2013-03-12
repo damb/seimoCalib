@@ -274,7 +274,7 @@ def main(argv=None):
         header = lines.next()
         columns = [map(float, col) for col in zip(*lines)]
         if len(header) != len(columns):
-          raise Error("Header info and data inconsistancy.")
+          raise Error("Header info and data inconsistency.")
         all_data.append(columns)
       except IOError as err:
         raise Error( \
