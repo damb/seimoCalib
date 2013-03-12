@@ -270,7 +270,7 @@ def main(argv=None):
             "optcaldibu: Reading file '{0}' ... \n".format(datafile))
       try:
         file = open(datafile, "r")
-        lines = (line.strip().split() for line in file)
+        lines = (line.split() for line in file)
         header = lines.next()
         columns = [map(float, col) for col in zip(*lines)]
         if len(header) != len(columns):
