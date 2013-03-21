@@ -39,11 +39,12 @@
  * 15/05/2012  V0.5   Write header information to result data files.
  * 05/07/2012  V0.5.1 Check if there are search parameters for calex
  *                    application. If not set maxit to 0.
+ * 21/03/2013  V0.5.2 add comments to help text
  * 
  * ============================================================================
  */
  
-#define OPTCALEX_VERSION "V0.5"
+#define OPTCALEX_VERSION "V0.5.2"
 #define OPTCALEX_LICENSE "GPLv2+"
 
 #include <vector>
@@ -250,9 +251,9 @@ int main(int iargc, char* argv[])
       ("second-order", po::value<std::vector<std::string> >(),
        "Add second order subsystem to calex parameter file.")
       ("calib-in", po::value<fs::path>()->required(),
-       "Filename of calibration input signal file.")
+       "Filename of calibration input signal file (format: seife).")
       ("calib-out", po::value<fs::path>()->required(), 
-       "Filename of calibration output signal file.")
+       "Filename of calibration output signal file (format seife).")
       ;
 
     // Hidden options, will be allowed both on command line and
