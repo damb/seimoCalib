@@ -96,7 +96,7 @@ optcalex: %: %.o $(patsubst %.cc,%.o,$(wildcard optcalexxx/*.cc))
 optnonlin: %: %.o $(patsubst %.cc,%.o,$(wildcard optnonlinxx/*.cc))
 	$(CXX) -o $@ $^ -ldatrwxx -lsffxx -lgsexx -ltime++ -laff -loptimizexx \
   	-lboost_filesystem -lboost_program_options -lboost_thread -std=c++0x \
-		$(LDFLAGS) $(CXXFLAGS) $(FLAGS)
+		-L$(LOCLIBDIR) $(LDFLAGS) $(CXXFLAGS) $(FLAGS)
 
 # ============================================================================
 # documentation
