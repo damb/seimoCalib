@@ -42,8 +42,8 @@
  * ============================================================================
  */
  
-#define OPTNONLIN_VERSION "V0.1.1"
-#define OPTNONLIN_LICENSE "GPLv2"
+#define _OPTNONLIN_VERSION_ "V0.1.1"
+#define _OPTNONLIN_LICENSE_ "GPLv2"
 
 #include <vector>
 #include <string>
@@ -75,8 +75,8 @@ int main(int iargc, char* argv[])
   // define usage information
   char usage_text[]=
   {
-    "Version: "OPTNONLIN_VERSION "\n"
-    "License: "OPTNONLIN_LICENSE "\n" 
+    "Version: " _OPTNONLIN_VERSION_ "\n"
+    "License: " _OPTNONLIN_LICENSE_ "\n" 
     "    SVN: $Id$\n" 
     " Author: Daniel Armbruster" "\n"
     "  Usage: optnonlin [-v|--verbose] [-o|--overwrite] [-t|--threads]" "\n"
@@ -218,7 +218,7 @@ int main(int iargc, char* argv[])
     if (vm.count("version"))
     {
       cout << "$Id$" << endl;
-      cout << "Version: " << OPTNONLIN_VERSION << endl;
+      cout << "Version: " << _OPTNONLIN_VERSION_ << endl;
       exit(0);
     }
     po::notify(vm);
