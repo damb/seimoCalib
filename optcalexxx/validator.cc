@@ -38,7 +38,6 @@
  
 #include <sstream>
 #include "validator.h"
-#include <boost/regex.hpp>
 
 namespace po = boost::program_options;
 
@@ -79,7 +78,7 @@ namespace calex
         id = str.substr(0,pos);
       } else
       {
-        throw validation_error(validation_error::invalid_option_value);
+        throw po::validation_error(po::validation_error::invalid_option_value);
       }
       // detect if system parameter will be treated additionally as a grid
       // system parameter
@@ -89,7 +88,8 @@ namespace calex
         iss >> std::fixed >> start >> c >> end >> c >> delta >> c >> unc;
         if (c != '|')
         {
-          throw validation_error(validation_error::invalid_option_value);
+          throw po::validation_error(
+              po::validation_error::invalid_option_value);
         }
         return std::shared_ptr<SystemParameter>(
             new GridSystemParameter(id, unc, id, start, end, delta));
@@ -98,7 +98,8 @@ namespace calex
         iss >> val >> c >> unc;
         if (c != '|')
         {
-          throw validation_error(validation_error::invalid_option_value);
+          throw po::validation_error(
+              po::validation_error::invalid_option_value);
         }
         return std::shared_ptr<SystemParameter>(
               new SystemParameter(id, val, unc));
@@ -109,23 +110,23 @@ namespace calex
 
 
   void validate(boost::any& v, const std::vector<std::string>& values,
-      std::shared_ptr<SystemParameter>*, int);
+      std::shared_ptr<SystemParameter>*, int)
   {
     // Extract the first string from 'values'. If there is more than
     // one string, it's an error, and exception will be thrown.
-    const string& str = validators::get_single_string(values);
+    const std::string& str = po::validators::get_single_string(values);
 
-    v = boost::any(::systemParameterParser(str));
+    v = boost::any(systemParameterParser(str));
   } // function validate - SystemParameter / GridSystemParameter
 
 
   void validate(boost::any& v, const std::vector<std::string>& values, 
       FirstOrderSubsystem*, int)
   {
-    const string& str = validators::get_single_string(values);
+    const std::string& str = po::validators::get_single_string(values);
     std::string type(str.substr(0,2));
     std::shared_ptr<SystemParameter> per_ptr(
-        ::systemParameterParser(str.substr(3)));
+        systemParameterParser(str.substr(3)));
 
     if ("LP" == type)
     {
@@ -136,7 +137,7 @@ namespace calex
        v = boost::any(FirstOrderSubsystem(HP, per_ptr));
     } else 
     { 
-      throw validation_error(validation_error::invalid_option_value);
+      throw po::validation_error(po::validation_error::invalid_option_value);
     }
   } // function validate - FirstOrderSubsystem
 
@@ -144,16 +145,17 @@ namespace calex
   void validate(boost::any& v, const std::vector<std::string>& values, 
       SecondOrderSubsystem*, int)
   {
+    const std::string& str = po::validators::get_single_string(values);
+
     std::string type(str.substr(0,2));
     std::string param_str(str.substr(str.find("|")+1,
       ::findIndexOfNthOccurrence(str, '|', 4)-str.find("|")-1));
     std::shared_ptr<SystemParameter> per_ptr(
-        systemParameterParser(param_str, "per"));
+        systemParameterParser(param_str));
     param_str = str.substr(type.size()+1+param_str.size()+1);
     std::shared_ptr<SystemParameter> dmp_ptr(
-        systemParameterParser(param_str, "dmp"));
+        systemParameterParser(param_str));
 
-    std::shared_ptr<CalexSubsystem> ret_ptr;
     if ("LP" == type)
     {
       v = boost::any(SecondOrderSubsystem(LP, per_ptr, dmp_ptr));
@@ -167,7 +169,7 @@ namespace calex
       v = boost::any(SecondOrderSubsystem(BP, per_ptr, dmp_ptr));
     } else
     { 
-      throw validation_error(validation_error::invalid_option_value);
+      throw po::validation_error(po::validation_error::invalid_option_value);
     }
   } // function validate - SecondOrderSubsystem
 

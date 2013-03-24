@@ -40,12 +40,13 @@
  * 05/07/2012  V0.5.1 Check if there are search parameters for calex
  *                    application. If not set maxit to 0.
  * 21/03/2013  V0.5.2 add comments to help text
+ * 24/03/2013  V0.6   make use of boost::program_options custom validators
  * 
  * ============================================================================
  */
  
-#define OPTCALEX_VERSION "V0.5.2"
-#define OPTCALEX_LICENSE "GPLv2+"
+#define _OPTCALEX_VERSION_ "V0.6"
+#define _OPTCALEX_LICENSE_ "GPLv2+"
 
 #include <vector>
 #include <iomanip>
@@ -60,7 +61,7 @@
 #include <optimizexx/globalalgorithms/gridsearch.h>
 #include <calexxx/calexvisitor.h>
 #include <calexxx/defaults.h>
-#include <calexxx/parser.h>
+#include "optcalexxx/validator.h"
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -79,8 +80,8 @@ int main(int iargc, char* argv[])
   // define usage information
   char usage_text[]=
   {
-    "Version: "OPTCALEX_VERSION "\n"
-    "License: "OPTCALEX_LICENSE "\n" 
+    "Version: " _OPTCALEX_VERSION_ "\n"
+    "License: " _OPTCALEX_LICENSE_ "\n" 
     "    SVN: $Id$\n" 
     " Author: Daniel Armbruster" "\n"
     "  Usage: optcalex [-v|--verbose] [-o|--overwrite] [-t|--threads] " "\n"
@@ -236,19 +237,12 @@ int main(int iargc, char* argv[])
       ("maxit", po::value<int>()->default_value(CALEX_MAXIT),
        "Number of maximum iterations of calex for each parameter "
        "configuration.")
-      ("sys-param", po::value<std::vector<std::string> >(),
-       "Additional system parameter.")
-      ("amp-param", po::value<std::string>(), 
-       "Configure amplitude 'amp' system parameter.")
-      ("del-param", po::value<std::string>(), 
-       "Configure delay 'del' system parameter.")
-      ("sub-param", po::value<std::string>(), 
-       "Configure 'sub' system parameter.")
-      ("til-param", po::value<std::string>(), 
-       "Configure 'til' system parameter.")
-      ("first-order", po::value<std::vector<std::string> >(),
+      ("param,p", po::value<std::vector<
+       std::shared_ptr<calex::SystemParameter>>>(),
+       "calex system parameter.")
+      ("first-order", po::value<std::vector<calex::FirstOrderSubsystem> >(),
        "Add first order subsystem to calex parameter file.")
-      ("second-order", po::value<std::vector<std::string> >(),
+      ("second-order", po::value<std::vector<calex::SecondOrderSubsystem> >(),
        "Add second order subsystem to calex parameter file.")
       ("calib-in", po::value<fs::path>()->required(),
        "Filename of calibration input signal file (format: seife).")
@@ -298,7 +292,7 @@ int main(int iargc, char* argv[])
     if (vm.count("version"))
     {
       cout << "$Id$" << endl;
-      cout << "Version: " << OPTCALEX_VERSION << endl;
+      cout << "Version: " << _OPTCALEX_VERSION_ << endl;
       exit(0);
     }
     po::notify(vm);
@@ -373,83 +367,54 @@ int main(int iargc, char* argv[])
     calex::CalexConfig calex_config(
         calibInfile.string(), calibOutfile.string());
     // fetch system parameter commandline arguments
-    if (vm.count("sys-param"))
+    if (vm.count("param"))
     {
-      std::vector<std::string> sys_params =
-        vm["sys-param"].as<std::vector<std::string> >();
+      std::vector<std::shared_ptr<calex::SystemParameter>> sys_params =
+        vm["param"].as<std::vector<std::shared_ptr<calex::SystemParameter>>>();
       for (auto cit(sys_params.cbegin()); cit != sys_params.cend(); ++cit)
       {
-        calex_config.add_systemParameter(
-            calex::parser::systemParameterParser(*cit));
+        if ((*cit)->get_nam() == "amp")
+        {
+          calex_config.set_amp(*cit);
+        } else
+        if ((*cit)->get_nam() == "del")
+        {
+          calex_config.set_del(*cit);
+        } else
+        if ((*cit)->get_nam() == "sub")
+        {
+          calex_config.set_sub(*cit);
+        } else
+        if ((*cit)->get_nam() == "til")
+        {
+          calex_config.set_til(*cit);
+        } else
+        {
+          calex_config.add_systemParameter(*cit);
+        }
       }
     }
 
-    if (vm.count("amp-param"))
-    {
-      calex_config.set_amp(
-          calex::parser::systemParameterParser(
-            vm["amp-param"].as<std::string>(),
-            "amp"));
-    } else
-    {
-      calex_config.set_amp(
-          std::shared_ptr<calex::SystemParameter>(
-            new calex::SystemParameter("amp", CALEX_AMP, CALEX_AMPUNC)));
-    }
-    if (vm.count("del-param"))
-    {
-      calex_config.set_del(
-          calex::parser::systemParameterParser(
-            vm["del-param"].as<std::string>(),
-            "del"));
-    } else
-    {
-      calex_config.set_del(
-          std::shared_ptr<calex::SystemParameter>(
-            new calex::SystemParameter("del", CALEX_DEL, CALEX_DELUNC)));
-    }
-    if (vm.count("sub-param"))
-    {
-      calex_config.set_sub(
-          calex::parser::systemParameterParser(
-            vm["sub-param"].as<std::string>(),
-            "sub"));
-    } else
-    {
-      calex_config.set_sub(
-          std::shared_ptr<calex::SystemParameter>(
-            new calex::SystemParameter("sub", CALEX_SUB, CALEX_SUBUNC)));
-    }
-    if (vm.count("til-param"))
-    {
-      calex_config.set_til(
-          calex::parser::systemParameterParser(
-            vm["til-param"].as<std::string>(),
-            "til"));
-    } else
-    {
-      calex_config.set_til(
-          std::shared_ptr<calex::SystemParameter>(
-            new calex::SystemParameter("til", CALEX_TIL, CALEX_TILUNC)));
-    }
-    // fetch first order subsystem commandline arguments
+    // fetch and handle first order subsystem commandline arguments
     if (vm.count("first-order"))
     {
-      std::vector<std::string> first_order =
-        vm["first-order"].as<std::vector<std::string> >();
+      std::vector<calex::FirstOrderSubsystem> first_order =
+        vm["first-order"].as<std::vector<calex::FirstOrderSubsystem>>();
       for (auto cit(first_order.cbegin()); cit != first_order.cend(); ++cit)
       {
-        calex_config.add_subsystem(calex::parser::firstOrderParser(*cit));
+        calex_config.add_subsystem(
+            std::make_shared<calex::FirstOrderSubsystem>(*cit));
       }
     }
-    // fetch second order subsystem commandline arguments
+    // fetch and handle second order subsystem commandline arguments
     if (vm.count("second-order"))
     {
-      std::vector<std::string> second_order =
-        vm["second-order"].as<std::vector<std::string> >();
+      std::vector<calex::SecondOrderSubsystem> second_order =
+        vm["second-order"].as<std::vector<calex::SecondOrderSubsystem> >();
       for (auto cit(second_order.cbegin()); cit != second_order.cend(); ++cit)
       {
-        calex_config.add_subsystem(calex::parser::secondOrderParser(*cit));
+        calex_config.add_subsystem(
+            std::make_shared<calex::SecondOrderSubsystem>(*cit));
       }
     }
     

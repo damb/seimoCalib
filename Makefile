@@ -88,7 +88,7 @@ SRCFILES=$(wildcard *.cc) $(wildcard optnonlinxx/*.cc)
 
 #------------------------------------------------------------------------------
 
-optcalex: %: %.o
+optcalex: %: %.o $(patsubst %.cc,%.o,$(wildcard optcalexxx/*.cc)) 
 	$(CXX) -o $@ $^ -I$(LOCALINCLUDEDIR) -loptimizexx -lcalexxx \
 		-lboost_filesystem -lboost_program_options -lboost_thread -std=c++0x \
 		-L$(LOCALLIBDIR) $(CXXFLAGS) $(FLAGS) $(LDFLAGS)
